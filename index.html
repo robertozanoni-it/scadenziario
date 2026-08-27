@@ -186,6 +186,7 @@
       <p class="subtitle">Solo scadenze economiche, separate tra Italia, Inghilterra, lavoro e clienti.</p>
     </div>
     <div class="toolbar">
+      <button class="btn primary" id="newRecurrenceBtn" type="button">+ Nuova ricorrenza</button>
       <button class="btn" id="themeBtn" type="button">Modalità dark</button>
       <button class="btn" id="reportBtn" type="button">Download report</button>
       <button class="btn" id="exportBtn">Esporta backup</button>
@@ -394,7 +395,7 @@
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
     weekCount:$('weekCount'), paidTotal:$('paidTotal'), dueCount:$('dueCount'),
     futureTotal:$('futureTotal'), futureCount:$('futureCount'), recordCount:$('recordCount'),
-    themeBtn:$('themeBtn'), reportBtn:$('reportBtn'), alerts:$('alerts'),
+    newRecurrenceBtn:$('newRecurrenceBtn'), themeBtn:$('themeBtn'), reportBtn:$('reportBtn'), alerts:$('alerts'),
     exportBtn:$('exportBtn'), importBtn:$('importBtn'), importFile:$('importFile'), resetBtn:$('resetBtn'),
     toast:$('toast'), confirmDialog:$('confirmDialog'), dialogTitle:$('dialogTitle'),
     dialogText:$('dialogText'), dialogCancel:$('dialogCancel'), dialogConfirm:$('dialogConfirm')
@@ -950,7 +951,18 @@
     document.body.classList.remove('scope-italy','scope-england','scope-work','scope-clients','scope-personal');
     document.body.classList.add(`scope-${state.scope}`);
     els.scopeBadge.textContent = scopeLabels[state.scope] || 'Italia';
-    els.scopeBadge.className = `badge ${state.scope}`;
+    els.scopeBadge.className = 'badge';
+    if(state.scope==='italy'){
+      els.scopeBadge.style.background='var(--italy-bg)';
+      els.scopeBadge.style.color='var(--italy-border)';
+    }else if(state.scope==='england'){
+      els.scopeBadge.style.background='var(--england-bg)';
+      els.scopeBadge.style.color='var(--england-border)';
+    }else{
+      els.scopeBadge.style.background='';
+      els.scopeBadge.style.color='';
+      els.scopeBadge.classList.add(state.scope);
+    }
     updateScopeFields();
     renderSummary();
     renderAlerts();
@@ -964,14 +976,21 @@
     els.saveBtn.textContent='Salva scadenza';
     els.cancelEditBtn.classList.add('hidden');
     els.dueDate.value=todayISO();
-    els.country.value='Italia';
     els.recurrence.value='none';
+
+    if(state.scope==='italy') els.country.value='Italia';
+    else if(state.scope==='england') els.country.value='Inghilterra';
+
     updateScopeFields();
   }
 
   function startEdit(id){
     const r=state.records.find(x=>x.id===id);
     if(!r) return;
+    if(state.scope !== r.scope){
+      state.scope = r.scope;
+      renderScope();
+    }
     els.recordId.value=r.id;
     els.title.value=r.title;
     els.amount.value=r.amount;
@@ -1117,6 +1136,7 @@
     state.scope=btn.dataset.scope;
     resetForm();
     renderScope();
+    window.scrollTo({top:0,behavior:'smooth'});
   }));
 
   els.form.addEventListener('submit',onSubmit);
@@ -1129,6 +1149,16 @@
   els.monthFilter.addEventListener('change',()=>{state.filters.month=els.monthFilter.value;renderList();});
   els.sortBy.addEventListener('change',()=>{state.filters.sort=els.sortBy.value;renderList();});
 
+  els.newRecurrenceBtn.addEventListener('click',()=>{
+    resetForm();
+    els.recurrence.value='monthly';
+    els.formTitle.textContent=`Nuova ricorrenza — ${state.scope==='italy'?'Italia':state.scope==='england'?'Inghilterra':state.scope==='work'?'Lavoro':'Clienti'}`;
+    els.saveBtn.textContent='Salva ricorrenza';
+    requestAnimationFrame(()=>{
+      els.title.focus();
+      els.form.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  });
   els.themeBtn.addEventListener('click',toggleTheme);
   els.reportBtn.addEventListener('click',downloadReport);
   els.exportBtn.addEventListener('click',exportBackup);
