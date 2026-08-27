@@ -75,16 +75,13 @@
     .badge.clients{background:var(--clients);color:var(--clients-text)}
     body.scope-personal .summary .card,
     body.scope-personal .filters,
-    body.scope-personal .content > .card,
-    body.scope-personal .alert-box{background:var(--personal-bg);border-color:var(--personal-border)}
+    body.scope-personal .content > .card{background:var(--personal-bg);border-color:var(--personal-border)}
     body.scope-work .summary .card,
     body.scope-work .filters,
-    body.scope-work .content > .card,
-    body.scope-work .alert-box{background:var(--work-bg);border-color:var(--work-border)}
+    body.scope-work .content > .card{background:var(--work-bg);border-color:var(--work-border)}
     body.scope-clients .summary .card,
     body.scope-clients .filters,
-    body.scope-clients .content > .card,
-    body.scope-clients .alert-box{background:var(--clients-bg);border-color:var(--clients-border)}
+    body.scope-clients .content > .card{background:var(--clients-bg);border-color:var(--clients-border)}
 
     body.scope-personal .item{background:color-mix(in srgb, var(--personal-bg) 82%, var(--panel));border-color:var(--personal-border)}
     body.scope-work .item{background:color-mix(in srgb, var(--work-bg) 82%, var(--panel));border-color:var(--work-border)}
@@ -116,8 +113,17 @@
     .status.paid{color:var(--ok)}
     .empty{text-align:center;padding:42px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
     .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
-    .alerts{display:grid;gap:10px;margin-bottom:18px}
-    .alert-box{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:14px;padding:14px 16px}
+    .alerts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .alert-box{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:14px;padding:14px 16px;min-height:112px}
+    .alert-box.personal{background:var(--personal-bg);border-color:var(--personal-border)}
+    .alert-box.work{background:var(--work-bg);border-color:var(--work-border)}
+    .alert-box.clients{background:var(--clients-bg);border-color:var(--clients-border)}
+    .alert-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .alert-head strong{margin:0}
+    .alert-count{font-size:12px;font-weight:800;padding:4px 8px;border-radius:999px;border:1px solid currentColor}
+    .alert-empty{color:var(--muted);font-size:13px;margin-top:10px}
+    @media(max-width:900px){.alerts{grid-template-columns:1fr}}
+
     .alert-box strong{display:block;margin-bottom:4px}
     .alert-list{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
     .recurrence-note{font-size:12px;color:var(--muted);margin-top:4px}
@@ -664,29 +670,59 @@
   }
 
   function renderAlerts(){
-    const records=getScopeRecords().filter(r=>!r.paid);
-    const upcoming=records.filter(r=>{const d=daysFromToday(r.dueDate);return d>=0 && d<=7;})
-      .sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
+    const scopes = [
+      {key:'personal', label:'Personale'},
+      {key:'work', label:'Lavoro'},
+      {key:'clients', label:'Clienti'}
+    ];
+
     els.alerts.innerHTML='';
-    if(!upcoming.length) return;
-    const box=document.createElement('div');
-    box.className='alert-box';
-    const strong=document.createElement('strong');
-    strong.textContent=`Avviso: ${upcoming.length} ${upcoming.length===1?'scadenza':'scadenze'} entro 7 giorni`;
-    const ul=document.createElement('ul');
-    ul.className='alert-list';
-    upcoming.slice(0,8).forEach(r=>{
-      const li=document.createElement('li');
-      li.textContent=`${formatDate(r.dueDate)} — ${r.title} — ${money(r.amount)}`;
-      ul.appendChild(li);
+
+    scopes.forEach(scopeInfo=>{
+      const upcoming = state.records
+        .filter(r=>r.scope===scopeInfo.key && !r.paid)
+        .filter(r=>{const d=daysFromToday(r.dueDate);return d>=0 && d<=7;})
+        .sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
+
+      const box=document.createElement('div');
+      box.className=`alert-box ${scopeInfo.key}`;
+
+      const head=document.createElement('div');
+      head.className='alert-head';
+
+      const strong=document.createElement('strong');
+      strong.textContent=scopeInfo.label;
+
+      const count=document.createElement('span');
+      count.className='alert-count';
+      count.textContent=`${upcoming.length} ${upcoming.length===1?'avviso':'avvisi'}`;
+
+      head.append(strong,count);
+      box.appendChild(head);
+
+      if(upcoming.length){
+        const ul=document.createElement('ul');
+        ul.className='alert-list';
+        upcoming.slice(0,6).forEach(r=>{
+          const li=document.createElement('li');
+          li.textContent=`${formatDate(r.dueDate)} — ${r.title} — ${money(r.amount)}`;
+          ul.appendChild(li);
+        });
+        if(upcoming.length>6){
+          const li=document.createElement('li');
+          li.textContent=`+ altre ${upcoming.length-6}`;
+          ul.appendChild(li);
+        }
+        box.appendChild(ul);
+      }else{
+        const empty=document.createElement('div');
+        empty.className='alert-empty';
+        empty.textContent='Nessuna scadenza entro 7 giorni.';
+        box.appendChild(empty);
+      }
+
+      els.alerts.appendChild(box);
     });
-    if(upcoming.length>8){
-      const li=document.createElement('li');
-      li.textContent=`+ altre ${upcoming.length-8}`;
-      ul.appendChild(li);
-    }
-    box.append(strong,ul);
-    els.alerts.appendChild(box);
   }
 
   function escapeCsvCell(v){
