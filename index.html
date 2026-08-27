@@ -10,18 +10,29 @@
       --bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;
       --primary:#111827;--primary-2:#374151;--danger:#b91c1c;--warn:#b45309;--ok:#047857;
       --work:#dbeafe;--work-text:#1d4ed8;--personal:#fce7f3;--personal-text:#be185d;--clients:#dcfce7;--clients-text:#15803d;
+      --personal-bg:#f3e8ff;--personal-border:#c084fc;
+      --work-bg:#dbeafe;--work-border:#60a5fa;
+      --clients-bg:#dcfce7;--clients-border:#4ade80;
       --shadow:0 10px 30px rgba(0,0,0,.06);--radius:18px;
     }
     :root[data-theme="dark"]{
       --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
       --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
-      --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;--shadow:none;
+      --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;
+      --personal-bg:#241238;--personal-border:#7c3aed;
+      --work-bg:#0b2340;--work-border:#2563eb;
+      --clients-bg:#0d2e1b;--clients-border:#16a34a;
+      --shadow:none;
     }
     @media (prefers-color-scheme: dark){
       :root:not([data-theme="light"]){
         --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
         --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
-        --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;--shadow:none;
+        --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;
+        --personal-bg:#241238;--personal-border:#7c3aed;
+        --work-bg:#0b2340;--work-border:#2563eb;
+        --clients-bg:#0d2e1b;--clients-border:#16a34a;
+        --shadow:none;
       }
     }
     *{box-sizing:border-box}
@@ -38,10 +49,13 @@
     .btn.primary{background:var(--primary);color:var(--bg);border-color:var(--primary)}
     .btn.danger{color:var(--danger)}
     .tabs{display:flex;gap:10px;margin-bottom:18px}
-    .tab{flex:1;border:1px solid var(--line);background:var(--panel);padding:14px 16px;border-radius:14px;font-weight:700;color:var(--muted)}
-    .tab.active{color:var(--text);outline:2px solid var(--text);outline-offset:-2px}
+    .tab{flex:1;border:1px solid var(--line);padding:14px 16px;border-radius:14px;font-weight:800;color:var(--text);transition:.2s ease}
+    .tab[data-scope="personal"]{background:var(--personal-bg);border-color:var(--personal-border)}
+    .tab[data-scope="work"]{background:var(--work-bg);border-color:var(--work-border)}
+    .tab[data-scope="clients"]{background:var(--clients-bg);border-color:var(--clients-border)}
+    .tab.active{outline:2px solid currentColor;outline-offset:2px;transform:translateY(-1px)}
     .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);transition:background .2s ease,border-color .2s ease}
     .metric-label{font-size:13px;color:var(--muted);margin-bottom:6px}
     .metric-value{font-weight:800;font-size:26px}
     .metric-note{font-size:12px;color:var(--muted);margin-top:4px}
@@ -59,6 +73,29 @@
     .badge.work{background:var(--work);color:var(--work-text)}
     .badge.personal{background:var(--personal);color:var(--personal-text)}
     .badge.clients{background:var(--clients);color:var(--clients-text)}
+    body.scope-personal .summary .card,
+    body.scope-personal .filters,
+    body.scope-personal .content > .card,
+    body.scope-personal .alert-box{background:var(--personal-bg);border-color:var(--personal-border)}
+    body.scope-work .summary .card,
+    body.scope-work .filters,
+    body.scope-work .content > .card,
+    body.scope-work .alert-box{background:var(--work-bg);border-color:var(--work-border)}
+    body.scope-clients .summary .card,
+    body.scope-clients .filters,
+    body.scope-clients .content > .card,
+    body.scope-clients .alert-box{background:var(--clients-bg);border-color:var(--clients-border)}
+
+    body.scope-personal .item{background:color-mix(in srgb, var(--personal-bg) 82%, var(--panel));border-color:var(--personal-border)}
+    body.scope-work .item{background:color-mix(in srgb, var(--work-bg) 82%, var(--panel));border-color:var(--work-border)}
+    body.scope-clients .item{background:color-mix(in srgb, var(--clients-bg) 82%, var(--panel));border-color:var(--clients-border)}
+
+    @supports not (background: color-mix(in srgb, white 50%, black)) {
+      body.scope-personal .item{background:var(--personal-bg)}
+      body.scope-work .item{background:var(--work-bg)}
+      body.scope-clients .item{background:var(--clients-bg)}
+    }
+
     .list{display:grid;gap:10px}
     .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}
     .item.overdue{border-left:5px solid var(--danger)}
@@ -691,7 +728,7 @@
       els.clientSuggestions.appendChild(option);
 
       const chip=document.createElement('span');
-      chip.className='badge work';
+      chip.className=`badge ${state.scope==='clients'?'clients':'work'}`;
       chip.style.display='inline-flex';
       chip.style.gap='7px';
       chip.style.alignItems='center';
@@ -729,6 +766,8 @@
       work: 'Lavoro',
       clients: 'Clienti'
     };
+    document.body.classList.remove('scope-personal','scope-work','scope-clients');
+    document.body.classList.add(`scope-${state.scope}`);
     els.scopeBadge.textContent = scopeLabels[state.scope] || 'Personale';
     els.scopeBadge.className = `badge ${state.scope}`;
     updateScopeFields();
