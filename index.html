@@ -10,7 +10,8 @@
       --bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;
       --primary:#111827;--primary-2:#374151;--danger:#b91c1c;--warn:#b45309;--ok:#047857;
       --work:#dbeafe;--work-text:#1d4ed8;--personal:#fce7f3;--personal-text:#be185d;--clients:#dcfce7;--clients-text:#15803d;
-      --personal-bg:#f3e8ff;--personal-border:#c084fc;
+      --italy-bg:#f3e8ff;--italy-border:#c084fc;
+      --england-bg:#fff7ed;--england-border:#f59e0b;
       --work-bg:#dbeafe;--work-border:#60a5fa;
       --clients-bg:#dcfce7;--clients-border:#4ade80;
       --shadow:0 10px 30px rgba(0,0,0,.06);--radius:18px;
@@ -19,7 +20,8 @@
       --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
       --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
       --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;
-      --personal-bg:#241238;--personal-border:#7c3aed;
+      --italy-bg:#241238;--italy-border:#7c3aed;
+      --england-bg:#33220a;--england-border:#f59e0b;
       --work-bg:#0b2340;--work-border:#2563eb;
       --clients-bg:#0d2e1b;--clients-border:#16a34a;
       --shadow:none;
@@ -29,7 +31,8 @@
         --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
         --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
         --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;
-        --personal-bg:#241238;--personal-border:#7c3aed;
+        --italy-bg:#241238;--italy-border:#7c3aed;
+        --england-bg:#33220a;--england-border:#f59e0b;
         --work-bg:#0b2340;--work-border:#2563eb;
         --clients-bg:#0d2e1b;--clients-border:#16a34a;
         --shadow:none;
@@ -50,7 +53,8 @@
     .btn.danger{color:var(--danger)}
     .tabs{display:flex;gap:10px;margin-bottom:18px}
     .tab{flex:1;border:1px solid var(--line);padding:14px 16px;border-radius:14px;font-weight:800;color:var(--text);transition:.2s ease}
-    .tab[data-scope="personal"]{background:var(--personal-bg);border-color:var(--personal-border)}
+    .tab[data-scope="italy"]{background:var(--italy-bg);border-color:var(--italy-border)}
+    .tab[data-scope="england"]{background:var(--england-bg);border-color:var(--england-border)}
     .tab[data-scope="work"]{background:var(--work-bg);border-color:var(--work-border)}
     .tab[data-scope="clients"]{background:var(--clients-bg);border-color:var(--clients-border)}
     .tab.active{outline:2px solid currentColor;outline-offset:2px;transform:translateY(-1px)}
@@ -73,9 +77,12 @@
     .badge.work{background:var(--work);color:var(--work-text)}
     .badge.personal{background:var(--personal);color:var(--personal-text)}
     .badge.clients{background:var(--clients);color:var(--clients-text)}
-    body.scope-personal .summary .card,
-    body.scope-personal .filters,
-    body.scope-personal .content > .card{background:var(--personal-bg);border-color:var(--personal-border)}
+    body.scope-italy .summary .card,
+    body.scope-italy .filters,
+    body.scope-italy .content > .card{background:var(--italy-bg);border-color:var(--italy-border)}
+    body.scope-england .summary .card,
+    body.scope-england .filters,
+    body.scope-england .content > .card{background:var(--england-bg);border-color:var(--england-border)}
     body.scope-work .summary .card,
     body.scope-work .filters,
     body.scope-work .content > .card{background:var(--work-bg);border-color:var(--work-border)}
@@ -83,7 +90,8 @@
     body.scope-clients .filters,
     body.scope-clients .content > .card{background:var(--clients-bg);border-color:var(--clients-border)}
 
-    body.scope-personal .item{background:color-mix(in srgb, var(--personal-bg) 82%, var(--panel));border-color:var(--personal-border)}
+    body.scope-italy .item{background:color-mix(in srgb, var(--italy-bg) 82%, var(--panel));border-color:var(--italy-border)}
+    body.scope-england .item{background:color-mix(in srgb, var(--england-bg) 82%, var(--panel));border-color:var(--england-border)}
     body.scope-work .item{background:color-mix(in srgb, var(--work-bg) 82%, var(--panel));border-color:var(--work-border)}
     body.scope-clients .item{background:color-mix(in srgb, var(--clients-bg) 82%, var(--panel));border-color:var(--clients-border)}
 
@@ -91,7 +99,8 @@
       .alert-box.personal{background:var(--personal-bg)}
       .alert-box.work{background:var(--work-bg)}
       .alert-box.clients{background:var(--clients-bg)}
-      body.scope-personal .item{background:var(--personal-bg)}
+      body.scope-italy .item{background:var(--italy-bg)}
+      body.scope-england .item{background:var(--england-bg)}
       body.scope-work .item{background:var(--work-bg)}
       body.scope-clients .item{background:var(--clients-bg)}
     }
@@ -116,7 +125,7 @@
     .status.paid{color:var(--ok)}
     .empty{text-align:center;padding:42px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
     .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
-    .alerts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .alerts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
     .alert-box{border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:14px;padding:14px 16px;min-height:112px;cursor:pointer;transition:transform .15s ease,filter .15s ease}
     .alert-box:hover{transform:translateY(-2px);filter:brightness(1.08)}
     .alert-box:focus{outline:2px solid var(--text);outline-offset:2px}
@@ -125,7 +134,8 @@
     .alert-box.clients{background:color-mix(in srgb,var(--clients-bg) 62%,transparent);border-color:var(--clients-border)}
     .alert-detail{grid-column:1/-1;border:1px solid var(--line);border-radius:14px;padding:16px;display:none}
     .alert-detail.open{display:block}
-    .alert-detail.personal{background:var(--personal-bg);border-color:var(--personal-border)}
+    .alert-detail.italy{background:var(--italy-bg);border-color:var(--italy-border)}
+    .alert-detail.england{background:var(--england-bg);border-color:var(--england-border)}
     .alert-detail.work{background:var(--work-bg);border-color:var(--work-border)}
     .alert-detail.clients{background:var(--clients-bg);border-color:var(--clients-border)}
     .alert-detail-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(127,127,127,.22);cursor:pointer}
@@ -173,7 +183,7 @@
   <header class="topbar">
     <div>
       <h1>Scadenziario pagamenti</h1>
-      <p class="subtitle">Solo scadenze economiche, separate tra personale, lavoro e clienti.</p>
+      <p class="subtitle">Solo scadenze economiche, separate tra Italia, Inghilterra, lavoro e clienti.</p>
     </div>
     <div class="toolbar">
       <button class="btn" id="themeBtn" type="button">Modalità dark</button>
@@ -186,7 +196,8 @@
   </header>
 
   <nav class="tabs" aria-label="Sezioni">
-    <button class="tab active" data-scope="personal">Personale</button>
+    <button class="tab active" data-scope="italy">Italia</button>
+    <button class="tab" data-scope="england">Inghilterra</button>
     <button class="tab" data-scope="work">Lavoro</button>
     <button class="tab" data-scope="clients">Clienti</button>
   </nav>
@@ -255,7 +266,7 @@
     <section class="card">
       <div class="panel-title">
         <h2 id="formTitle">Nuova scadenza</h2>
-        <span class="badge personal" id="scopeBadge">Personale</span>
+        <span class="badge personal" id="scopeBadge">Italia</span>
       </div>
       <form id="paymentForm" class="form-grid" novalidate>
         <input type="hidden" id="recordId" />
@@ -361,7 +372,7 @@
   const SCHEMA_VERSION = 1;
 
   const state = {
-    scope: 'personal',
+    scope: 'italy',
     records: [],
     clients: [],
     filters: { search:'', status:'all', month:'', sort:'dateAsc' },
@@ -430,7 +441,12 @@
 
   function normalizeRecord(raw){
     if(!raw || typeof raw !== 'object') return null;
-    const scope = ['personal','work','clients'].includes(raw.scope) ? raw.scope : null;
+    let scope = null;
+    if(['italy','england','work','clients'].includes(raw.scope)) {
+      scope = raw.scope;
+    } else if(raw.scope === 'personal') {
+      scope = raw.country === 'Inghilterra' ? 'england' : 'italy';
+    }
     const title = String(raw.title||'').trim().slice(0,120);
     const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(String(raw.dueDate||'')) ? String(raw.dueDate) : '';
     const amount = Number(raw.amount);
@@ -439,7 +455,7 @@
       id: String(raw.id||uid()),
       scope, title, amount: Math.round(amount*100)/100, dueDate,
       clientName:String(raw.clientName||raw.payee||'').trim().slice(0,120),
-      country: raw.scope === 'personal' ? (raw.country === 'Inghilterra' ? 'Inghilterra' : 'Italia') : '',
+      country: scope === 'italy' ? 'Italia' : scope === 'england' ? 'Inghilterra' : '',
       method:String(raw.method||'').trim().slice(0,80),
       recurrence:['none','weekly','monthly','yearly'].includes(raw.recurrence) ? raw.recurrence : 'none',
       notes:String(raw.notes||'').trim().slice(0,500),
@@ -593,8 +609,8 @@
 
       const parts = [
         `Scadenza: ${formatDate(r.dueDate)}`,
-        r.scope === 'personal' && r.country ? `Paese: ${r.country}` : '',
-        r.scope !== 'personal' && r.clientName ? `Cliente: ${r.clientName}` : '',
+        (r.scope === 'italy' || r.scope === 'england') && r.country ? `Paese: ${r.country}` : '',
+        (r.scope === 'work' || r.scope === 'clients') && r.clientName ? `Cliente: ${r.clientName}` : '',
         r.method ? `Metodo: ${r.method}` : '',
         r.recurrence && r.recurrence!=='none' ? `Ricorrenza: ${recurrenceLabel(r.recurrence)}` : ''
       ].filter(Boolean);
@@ -711,7 +727,8 @@
 
   function renderAlerts(){
     const scopes = [
-      {key:'personal', label:'Personale'},
+      {key:'italy', label:'Italia'},
+      {key:'england', label:'Inghilterra'},
       {key:'work', label:'Lavoro'},
       {key:'clients', label:'Clienti'}
     ];
@@ -843,7 +860,7 @@
   function downloadReport(){
     const headers=['Sezione','Pagamento','Importo','Scadenza','Stato','Cliente','Paese','Metodo','Ricorrenza','Note'];
     const rows=state.records.slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).map(r=>[
-      r.scope==='personal'?'Personale':r.scope==='work'?'Lavoro':'Clienti',
+      r.scope==='italy'?'Italia':r.scope==='england'?'Inghilterra':r.scope==='work'?'Lavoro':'Clienti',
       r.title,
       r.amount.toFixed(2),
       r.dueDate,
@@ -865,11 +882,18 @@
   }
 
   function updateScopeFields(){
-    const personal = state.scope === 'personal';
-    els.countryField.classList.toggle('hidden', !personal);
-    els.clientField.classList.toggle('hidden', personal);
-    els.clientManager.classList.toggle('hidden', personal);
-    if(personal) els.clientName.value='';
+    const isCountrySection = state.scope === 'italy' || state.scope === 'england';
+    els.countryField.classList.add('hidden');
+    els.clientField.classList.toggle('hidden', isCountrySection);
+    els.clientManager.classList.toggle('hidden', isCountrySection);
+
+    if(state.scope==='italy'){
+      els.country.value='Italia';
+      els.clientName.value='';
+    }else if(state.scope==='england'){
+      els.country.value='Inghilterra';
+      els.clientName.value='';
+    }
     renderClients();
   }
 
@@ -918,13 +942,14 @@
   function renderScope(){
     document.querySelectorAll('.tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.scope===state.scope));
     const scopeLabels = {
-      personal: 'Personale',
+      italy: 'Italia',
+      england: 'Inghilterra',
       work: 'Lavoro',
       clients: 'Clienti'
     };
-    document.body.classList.remove('scope-personal','scope-work','scope-clients');
+    document.body.classList.remove('scope-italy','scope-england','scope-work','scope-clients','scope-personal');
     document.body.classList.add(`scope-${state.scope}`);
-    els.scopeBadge.textContent = scopeLabels[state.scope] || 'Personale';
+    els.scopeBadge.textContent = scopeLabels[state.scope] || 'Italia';
     els.scopeBadge.className = `badge ${state.scope}`;
     updateScopeFields();
     renderSummary();
@@ -978,8 +1003,8 @@
     const candidate = normalizeRecord({
       id:id||uid(), scope:state.scope, title:els.title.value, amount:els.amount.value,
       dueDate:els.dueDate.value,
-      clientName: state.scope==='personal' ? '' : els.clientName.value,
-      country: state.scope==='personal' ? els.country.value : '',
+      clientName: (state.scope==='italy' || state.scope==='england') ? '' : els.clientName.value,
+      country: state.scope==='italy' ? 'Italia' : state.scope==='england' ? 'Inghilterra' : '',
       method:els.method.value, recurrence:els.recurrence.value, notes:els.notes.value,
       paid:false
     });
