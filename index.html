@@ -54,7 +54,7 @@
     .tab[data-scope="work"]{background:var(--work-bg);border-color:var(--work-border)}
     .tab[data-scope="clients"]{background:var(--clients-bg);border-color:var(--clients-border)}
     .tab.active{outline:2px solid currentColor;outline-offset:2px;transform:translateY(-1px)}
-    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+    .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);transition:background .2s ease,border-color .2s ease}
     .metric-label{font-size:13px;color:var(--muted);margin-bottom:6px}
     .metric-value{font-weight:800;font-size:26px}
@@ -140,6 +140,9 @@
 
     .alert-box strong{display:block;margin-bottom:4px}
     .alert-list{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+    .alert-list li{cursor:pointer;padding:4px 6px;border-radius:8px}
+    .alert-list li:hover{background:rgba(255,255,255,.08);color:var(--text)}
+    .alert-list li:focus{outline:2px solid currentColor;outline-offset:2px}
     .recurrence-note{font-size:12px;color:var(--muted);margin-top:4px}
     .hidden{display:none!important}
     .toast{position:fixed;right:20px;bottom:20px;background:var(--primary);color:var(--bg);padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);max-width:min(360px,calc(100vw - 40px));z-index:50}
@@ -147,6 +150,9 @@
     dialog::backdrop{background:rgba(0,0,0,.4)}
     .dialog-body{padding:20px}
     .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+    @media(max-width:1100px){
+      .summary{grid-template-columns:repeat(3,1fr)}
+    }
     @media(max-width:900px){
       .summary{grid-template-columns:1fr 1fr}
       .filters{grid-template-columns:1fr 1fr}
@@ -189,14 +195,19 @@
 
   <section class="summary" aria-label="Riepilogo">
     <div class="card">
-      <div class="metric-label">Da pagare</div>
+      <div class="metric-label">Da pagare ora</div>
       <div class="metric-value" id="dueTotal">€ 0,00</div>
-      <div class="metric-note">Scadenze aperte nella sezione</div>
+      <div class="metric-note" id="dueCount">0 pagamenti entro 7 giorni</div>
     </div>
     <div class="card">
       <div class="metric-label">Scaduti</div>
       <div class="metric-value" id="overdueTotal">€ 0,00</div>
       <div class="metric-note" id="overdueCount">0 pagamenti</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Scadenze future</div>
+      <div class="metric-value" id="futureTotal">€ 0,00</div>
+      <div class="metric-note" id="futureCount">0 oltre 7 giorni</div>
     </div>
     <div class="card">
       <div class="metric-label">In scadenza 7 giorni</div>
@@ -294,7 +305,7 @@
             <option value="monthly">Mensile</option>
             <option value="yearly">Annuale</option>
           </select>
-          <div class="recurrence-note">Quando una scadenza ricorrente viene segnata come pagata, viene creata automaticamente la successiva.</div>
+          <div class="recurrence-note">Quando una scadenza ricorrente viene segnata come pagata, viene creata automaticamente la successiva. Le ricorrenze oltre 7 giorni vengono conteggiate in “Scadenze future”, non in “Da pagare ora”.</div>
         </div>
         <div class="field">
           <label for="notes">Note</label>
@@ -370,7 +381,8 @@
     cancelEditBtn:$('cancelEditBtn'), search:$('search'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
-    weekCount:$('weekCount'), paidTotal:$('paidTotal'), recordCount:$('recordCount'),
+    weekCount:$('weekCount'), paidTotal:$('paidTotal'), dueCount:$('dueCount'),
+    futureTotal:$('futureTotal'), futureCount:$('futureCount'), recordCount:$('recordCount'),
     themeBtn:$('themeBtn'), reportBtn:$('reportBtn'), alerts:$('alerts'),
     exportBtn:$('exportBtn'), importBtn:$('importBtn'), importFile:$('importFile'), resetBtn:$('resetBtn'),
     toast:$('toast'), confirmDialog:$('confirmDialog'), dialogTitle:$('dialogTitle'),
@@ -515,18 +527,32 @@
   function renderSummary(){
     const records = getScopeRecords();
     const open = records.filter(r=>!r.paid);
-    const overdue = open.filter(r=>daysFromToday(r.dueDate)<0);
-    const week = open.filter(r=> {
-      const d=daysFromToday(r.dueDate); return d>=0 && d<=7;
+
+    // "Da pagare ora" = scadenze non pagate da oggi ai prossimi 7 giorni.
+    // Gli scaduti sono separati e le ricorrenze future oltre 7 giorni non gonfiano il totale corrente.
+    const dueNow = open.filter(r=>{
+      const d=daysFromToday(r.dueDate);
+      return d>=0 && d<=7;
     });
+    const overdue = open.filter(r=>daysFromToday(r.dueDate)<0);
+    const future = open.filter(r=>daysFromToday(r.dueDate)>7);
+    const week = dueNow;
     const paid = records.filter(r=>r.paid);
 
     const sum = arr => arr.reduce((a,r)=>a+r.amount,0);
-    els.dueTotal.textContent = money(sum(open));
+
+    els.dueTotal.textContent = money(sum(dueNow));
+    els.dueCount.textContent = `${dueNow.length} ${dueNow.length===1?'pagamento':'pagamenti'} entro 7 giorni`;
+
     els.overdueTotal.textContent = money(sum(overdue));
     els.overdueCount.textContent = `${overdue.length} ${overdue.length===1?'pagamento':'pagamenti'}`;
+
+    els.futureTotal.textContent = money(sum(future));
+    els.futureCount.textContent = `${future.length} ${future.length===1?'scadenza':'scadenze'} oltre 7 giorni`;
+
     els.weekTotal.textContent = money(sum(week));
     els.weekCount.textContent = `${week.length} ${week.length===1?'pagamento':'pagamenti'}`;
+
     els.paidTotal.textContent = money(sum(paid));
   }
 
@@ -720,7 +746,26 @@
         ul.className='alert-list';
         upcoming.slice(0,3).forEach(r=>{
           const li=document.createElement('li');
+          li.tabIndex=0;
+          li.setAttribute('role','button');
+          li.setAttribute('aria-label',`Modifica scadenza ${r.title}`);
           li.textContent=`${formatDate(r.dueDate)} — ${r.title} — ${money(r.amount)}`;
+          const editAlert=()=>{
+            state.scope=r.scope;
+            renderScope();
+            startEdit(r.id);
+          };
+          li.addEventListener('click',(e)=>{
+            e.stopPropagation();
+            editAlert();
+          });
+          li.addEventListener('keydown',(e)=>{
+            if(e.key==='Enter' || e.key===' '){
+              e.preventDefault();
+              e.stopPropagation();
+              editAlert();
+            }
+          });
           ul.appendChild(li);
         });
         if(upcoming.length>3){
