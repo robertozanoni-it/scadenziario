@@ -189,9 +189,17 @@
             <input id="dueDate" type="date" required />
           </div>
         </div>
-        <div class="field">
-          <label for="payee">Beneficiario / destinatario</label>
-          <input id="payee" maxlength="120" placeholder="Es. Agenzia Entrate, Enel..." />
+        <div class="field" id="clientField">
+          <label for="clientName">Cliente</label>
+          <input id="clientName" maxlength="120" list="clientSuggestions" placeholder="Seleziona o inserisci un cliente..." />
+          <datalist id="clientSuggestions"></datalist>
+        </div>
+        <div class="field hidden" id="countryField">
+          <label for="country">Paese</label>
+          <select id="country">
+            <option value="Italia">Italia</option>
+            <option value="Inghilterra">Inghilterra</option>
+          </select>
         </div>
         <div class="field">
           <label for="method">Metodo di pagamento</label>
@@ -214,6 +222,17 @@
           <button class="btn hidden" type="button" id="cancelEditBtn">Annulla modifica</button>
         </div>
       </form>
+      <div id="clientManager" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+        <div class="panel-title">
+          <h2 style="font-size:15px">Lista clienti</h2>
+          <span class="metric-note" id="clientCount">0 clienti</span>
+        </div>
+        <div class="row2">
+          <input id="newClient" maxlength="120" placeholder="Nome cliente" />
+          <button class="btn" type="button" id="addClientBtn">Aggiungi cliente</button>
+        </div>
+        <div id="clientList" class="item-meta" style="margin-top:10px"></div>
+      </div>
       <div class="footer-note">I dati restano sul dispositivo tramite localStorage. Nessun dato viene inviato online.</div>
     </section>
 
@@ -250,6 +269,7 @@
   const state = {
     scope: 'personal',
     records: [],
+    clients: [],
     filters: { search:'', status:'all', month:'', sort:'dateAsc' },
     pendingConfirm: null
   };
@@ -257,7 +277,10 @@
   const $ = (id) => document.getElementById(id);
   const els = {
     form:$('paymentForm'), recordId:$('recordId'), title:$('title'), amount:$('amount'),
-    dueDate:$('dueDate'), payee:$('payee'), method:$('method'), notes:$('notes'),
+    dueDate:$('dueDate'), clientName:$('clientName'), country:$('country'),
+    clientField:$('clientField'), countryField:$('countryField'), clientManager:$('clientManager'),
+    clientSuggestions:$('clientSuggestions'), newClient:$('newClient'), addClientBtn:$('addClientBtn'),
+    clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'), notes:$('notes'),
     list:$('list'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
     cancelEditBtn:$('cancelEditBtn'), search:$('search'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
@@ -317,7 +340,8 @@
     return {
       id: String(raw.id||uid()),
       scope, title, amount: Math.round(amount*100)/100, dueDate,
-      payee:String(raw.payee||'').trim().slice(0,120),
+      clientName:String(raw.clientName||raw.payee||'').trim().slice(0,120),
+      country: raw.scope === 'personal' ? (raw.country === 'Inghilterra' ? 'Inghilterra' : 'Italia') : '',
       method:String(raw.method||'').trim().slice(0,80),
       notes:String(raw.notes||'').trim().slice(0,500),
       paid:Boolean(raw.paid),
@@ -339,6 +363,9 @@
         seen.add(r.id);
         return true;
       });
+      state.clients = Array.isArray(parsed.clients)
+        ? [...new Set(parsed.clients.map(x=>String(x||'').trim().slice(0,120)).filter(Boolean))]
+        : [];
     }catch(err){
       console.error(err);
       showToast('Backup locale non leggibile: dati non sovrascritti.');
@@ -346,7 +373,7 @@
   }
 
   function save(){
-    const payload = { schemaVersion: SCHEMA_VERSION, savedAt:new Date().toISOString(), records:state.records };
+    const payload = { schemaVersion: SCHEMA_VERSION, savedAt:new Date().toISOString(), records:state.records, clients:state.clients };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }
 
@@ -365,7 +392,7 @@
   function filterRecords(records){
     const q = state.filters.search.trim().toLowerCase();
     let out = records.filter(r=>{
-      if(q && ![r.title,r.payee,r.method,r.notes].join(' ').toLowerCase().includes(q)) return false;
+      if(q && ![r.title,r.clientName,r.country,r.method,r.notes].join(' ').toLowerCase().includes(q)) return false;
       const st = recordStatus(r);
       if(state.filters.status==='open' && r.paid) return false;
       if(state.filters.status==='overdue' && st!=='overdue') return false;
@@ -440,7 +467,8 @@
 
       const parts = [
         `Scadenza: ${formatDate(r.dueDate)}`,
-        r.payee ? `A: ${r.payee}` : '',
+        r.scope === 'personal' && r.country ? `Paese: ${r.country}` : '',
+        r.scope !== 'personal' && r.clientName ? `Cliente: ${r.clientName}` : '',
         r.method ? `Metodo: ${r.method}` : ''
       ].filter(Boolean);
 
@@ -499,6 +527,57 @@
     }
   }
 
+  function updateScopeFields(){
+    const personal = state.scope === 'personal';
+    els.countryField.classList.toggle('hidden', !personal);
+    els.clientField.classList.toggle('hidden', personal);
+    els.clientManager.classList.toggle('hidden', personal);
+    if(personal) els.clientName.value='';
+    renderClients();
+  }
+
+  function renderClients(){
+    if(!els.clientList) return;
+    els.clientSuggestions.innerHTML='';
+    els.clientList.innerHTML='';
+    els.clientCount.textContent=`${state.clients.length} ${state.clients.length===1?'cliente':'clienti'}`;
+    state.clients.slice().sort((a,b)=>a.localeCompare(b,'it')).forEach(name=>{
+      const option=document.createElement('option');
+      option.value=name;
+      els.clientSuggestions.appendChild(option);
+
+      const chip=document.createElement('span');
+      chip.className='badge work';
+      chip.style.display='inline-flex';
+      chip.style.gap='7px';
+      chip.style.alignItems='center';
+      const txt=document.createElement('span');
+      txt.textContent=name;
+      const del=document.createElement('button');
+      del.type='button';
+      del.setAttribute('aria-label',`Elimina cliente ${name}`);
+      del.textContent='×';
+      del.style.cssText='border:0;background:transparent;color:inherit;font-weight:900;padding:0 2px';
+      del.addEventListener('click',()=>confirmAction('Elimina cliente',`Eliminare "${name}" dalla lista clienti? Le scadenze già registrate resteranno invariate.`,()=>{
+        state.clients=state.clients.filter(c=>c!==name);
+        save(); renderClients(); showToast('Cliente eliminato dalla lista.');
+      }));
+      chip.append(txt,del);
+      els.clientList.appendChild(chip);
+    });
+  }
+
+  function addClient(){
+    const name=els.newClient.value.trim().slice(0,120);
+    if(!name){showToast('Inserisci il nome del cliente.');return;}
+    if(state.clients.some(c=>c.toLowerCase()===name.toLowerCase())){
+      showToast('Cliente già presente.'); return;
+    }
+    state.clients.push(name);
+    els.newClient.value='';
+    save(); renderClients(); showToast('Cliente aggiunto.');
+  }
+
   function renderScope(){
     document.querySelectorAll('.tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.scope===state.scope));
     const scopeLabels = {
@@ -508,6 +587,7 @@
     };
     els.scopeBadge.textContent = scopeLabels[state.scope] || 'Personale';
     els.scopeBadge.className = `badge ${state.scope}`;
+    updateScopeFields();
     renderSummary();
     renderList();
   }
@@ -519,6 +599,8 @@
     els.saveBtn.textContent='Salva scadenza';
     els.cancelEditBtn.classList.add('hidden');
     els.dueDate.value=todayISO();
+    els.country.value='Italia';
+    updateScopeFields();
   }
 
   function startEdit(id){
@@ -528,7 +610,8 @@
     els.title.value=r.title;
     els.amount.value=r.amount;
     els.dueDate.value=r.dueDate;
-    els.payee.value=r.payee;
+    els.clientName.value=r.clientName || '';
+    els.country.value=r.country || 'Italia';
     els.method.value=r.method;
     els.notes.value=r.notes;
     els.formTitle.textContent='Modifica scadenza';
@@ -552,7 +635,10 @@
     const id=els.recordId.value;
     const candidate = normalizeRecord({
       id:id||uid(), scope:state.scope, title:els.title.value, amount:els.amount.value,
-      dueDate:els.dueDate.value, payee:els.payee.value, method:els.method.value, notes:els.notes.value,
+      dueDate:els.dueDate.value,
+      clientName: state.scope==='personal' ? '' : els.clientName.value,
+      country: state.scope==='personal' ? els.country.value : '',
+      method:els.method.value, notes:els.notes.value,
       paid:false
     });
     if(!candidate){
@@ -603,7 +689,7 @@
   }
 
   function exportBackup(){
-    const payload={schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),records:state.records};
+    const payload={schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),records:state.records,clients:state.clients};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
@@ -627,11 +713,16 @@
       });
       if(normalized.length && !deduped.length) throw new Error('Nessun record valido');
       const previous=state.records.slice();
+      const previousClients=state.clients.slice();
       state.records=deduped;
+      state.clients = Array.isArray(parsed.clients)
+        ? [...new Set(parsed.clients.map(x=>String(x||'').trim().slice(0,120)).filter(Boolean))]
+        : state.clients;
       try{
         save();
       }catch(err){
         state.records=previous;
+        state.clients=previousClients;
         throw err;
       }
       resetForm(); renderScope();
@@ -651,6 +742,8 @@
   }));
 
   els.form.addEventListener('submit',onSubmit);
+  els.addClientBtn.addEventListener('click',addClient);
+  els.newClient.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addClient();}});
   els.cancelEditBtn.addEventListener('click',resetForm);
 
   els.search.addEventListener('input',()=>{state.filters.search=els.search.value;renderList();});
@@ -664,7 +757,7 @@
   els.resetBtn.addEventListener('click',()=>confirmAction(
     'Azzera tutto',
     'Eliminare tutte le scadenze di lavoro e personali? Prima puoi esportare un backup.',
-    ()=>{state.records=[];save();resetForm();renderScope();showToast('Tutti i dati sono stati eliminati.');}
+    ()=>{state.records=[];state.clients=[];save();resetForm();renderScope();showToast('Tutti i dati sono stati eliminati.');}
   ));
 
   els.dialogCancel.addEventListener('click',()=>{state.pendingConfirm=null;els.confirmDialog.close();});
