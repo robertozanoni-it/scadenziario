@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark">
+  <title>Scadenziario Pagamenti</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;
+      --primary:#111827;--primary-2:#374151;--danger:#b91c1c;--warn:#b45309;--ok:#047857;
+      --work:#dbeafe;--work-text:#1d4ed8;--personal:#fce7f3;--personal-text:#be185d;--clients:#dcfce7;--clients-text:#15803d;
+      --shadow:0 10px 30px rgba(0,0,0,.06);--radius:18px;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
+        --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
+        --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;--shadow:none;
+      }
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .app{max-width:1280px;margin:0 auto;padding:24px}
+    .topbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,42px);line-height:1;margin:0 0 8px}
+    .subtitle{color:var(--muted);margin:0}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:12px}
+    .btn:hover{filter:brightness(.98)}
+    .btn.primary{background:var(--primary);color:var(--bg);border-color:var(--primary)}
+    .btn.danger{color:var(--danger)}
+    .tabs{display:flex;gap:10px;margin-bottom:18px}
+    .tab{flex:1;border:1px solid var(--line);background:var(--panel);padding:14px 16px;border-radius:14px;font-weight:700;color:var(--muted)}
+    .tab.active{color:var(--text);outline:2px solid var(--text);outline-offset:-2px}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+    .metric-label{font-size:13px;color:var(--muted);margin-bottom:6px}
+    .metric-value{font-weight:800;font-size:26px}
+    .metric-note{font-size:12px;color:var(--muted);margin-top:4px}
+    .filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-size:12px;font-weight:700;color:var(--muted)}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:11px 12px;border-radius:12px;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+    .content{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
+    .form-grid{display:grid;gap:12px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .panel-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+    .panel-title h2{font-size:18px;margin:0}
+    .badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800}
+    .badge.work{background:var(--work);color:var(--work-text)}
+    .badge.personal{background:var(--personal);color:var(--personal-text)}
+    .badge.clients{background:var(--clients);color:var(--clients-text)}
+    .list{display:grid;gap:10px}
+    .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}
+    .item.overdue{border-left:5px solid var(--danger)}
+    .item.today{border-left:5px solid var(--warn)}
+    .item.paid{opacity:.62}
+    .item-main{min-width:0}
+    .item-title{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .item-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:13px;color:var(--muted)}
+    .amount{font-size:18px;font-weight:900;text-align:right}
+    .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+    .mini{padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text)}
+    .status{font-size:12px;font-weight:800}
+    .status.overdue{color:var(--danger)}
+    .status.today{color:var(--warn)}
+    .status.upcoming{color:var(--muted)}
+    .status.paid{color:var(--ok)}
+    .empty{text-align:center;padding:42px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
+    .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
+    .hidden{display:none!important}
+    .toast{position:fixed;right:20px;bottom:20px;background:var(--primary);color:var(--bg);padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);max-width:min(360px,calc(100vw - 40px));z-index:50}
+    dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--text);padding:0;max-width:560px;width:calc(100% - 32px)}
+    dialog::backdrop{background:rgba(0,0,0,.4)}
+    .dialog-body{padding:20px}
+    .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+    @media(max-width:900px){
+      .summary{grid-template-columns:1fr 1fr}
+      .filters{grid-template-columns:1fr 1fr}
+      .content{grid-template-columns:1fr}
+    }
+    @media(max-width:560px){
+      .app{padding:14px}
+      .summary,.filters,.row2{grid-template-columns:1fr}
+      .item{grid-template-columns:1fr}
+      .amount{text-align:left}
+      .actions{justify-content:flex-start}
+      .tabs{position:sticky;top:8px;z-index:4}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <h1>Scadenziario pagamenti</h1>
+      <p class="subtitle">Solo scadenze economiche, separate tra personale, lavoro e clienti.</p>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="exportBtn">Esporta backup</button>
+      <button class="btn" id="importBtn">Importa backup</button>
+      <button class="btn danger" id="resetBtn">Azzera tutto</button>
+      <input type="file" id="importFile" accept="application/json,.json" class="hidden" />
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Sezioni">
+    <button class="tab active" data-scope="personal">Personale</button>
+    <button class="tab" data-scope="work">Lavoro</button>
+    <button class="tab" data-scope="clients">Clienti</button>
+  </nav>
+
+  <section class="summary" aria-label="Riepilogo">
+    <div class="card">
+      <div class="metric-label">Da pagare</div>
+      <div class="metric-value" id="dueTotal">€ 0,00</div>
+      <div class="metric-note">Scadenze aperte nella sezione</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Scaduti</div>
+      <div class="metric-value" id="overdueTotal">€ 0,00</div>
+      <div class="metric-note" id="overdueCount">0 pagamenti</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">In scadenza 7 giorni</div>
+      <div class="metric-value" id="weekTotal">€ 0,00</div>
+      <div class="metric-note" id="weekCount">0 pagamenti</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Pagati</div>
+      <div class="metric-value" id="paidTotal">€ 0,00</div>
+      <div class="metric-note">Storico della sezione</div>
+    </div>
+  </section>
+
+  <section class="filters card">
+    <div class="field">
+      <label for="search">Cerca</label>
+      <input id="search" placeholder="Es. affitto, IVA, assicurazione..." />
+    </div>
+    <div class="field">
+      <label for="statusFilter">Stato</label>
+      <select id="statusFilter">
+        <option value="all">Tutti</option>
+        <option value="open">Da pagare</option>
+        <option value="overdue">Scaduti</option>
+        <option value="today">Oggi</option>
+        <option value="paid">Pagati</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="monthFilter">Mese</label>
+      <input id="monthFilter" type="month" />
+    </div>
+    <div class="field">
+      <label for="sortBy">Ordina</label>
+      <select id="sortBy">
+        <option value="dateAsc">Scadenza più vicina</option>
+        <option value="dateDesc">Scadenza più lontana</option>
+        <option value="amountDesc">Importo più alto</option>
+        <option value="amountAsc">Importo più basso</option>
+      </select>
+    </div>
+  </section>
+
+  <main class="content">
+    <section class="card">
+      <div class="panel-title">
+        <h2 id="formTitle">Nuova scadenza</h2>
+        <span class="badge personal" id="scopeBadge">Personale</span>
+      </div>
+      <form id="paymentForm" class="form-grid" novalidate>
+        <input type="hidden" id="recordId" />
+        <div class="field">
+          <label for="title">Pagamento *</label>
+          <input id="title" maxlength="120" required placeholder="Es. F24 IVA, bolletta luce..." />
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="amount">Importo (€) *</label>
+            <input id="amount" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="0,00" />
+          </div>
+          <div class="field">
+            <label for="dueDate">Scadenza *</label>
+            <input id="dueDate" type="date" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="payee">Beneficiario / destinatario</label>
+          <input id="payee" maxlength="120" placeholder="Es. Agenzia Entrate, Enel..." />
+        </div>
+        <div class="field">
+          <label for="method">Metodo di pagamento</label>
+          <select id="method">
+            <option value="">Non specificato</option>
+            <option>Bonifico</option>
+            <option>Carta</option>
+            <option>Addebito automatico</option>
+            <option>F24</option>
+            <option>Contanti</option>
+            <option>Altro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="notes">Note</label>
+          <textarea id="notes" rows="3" maxlength="500" placeholder="IBAN, riferimento fattura, note utili..."></textarea>
+        </div>
+        <div class="row2">
+          <button class="btn primary" type="submit" id="saveBtn">Salva scadenza</button>
+          <button class="btn hidden" type="button" id="cancelEditBtn">Annulla modifica</button>
+        </div>
+      </form>
+      <div class="footer-note">I dati restano sul dispositivo tramite localStorage. Nessun dato viene inviato online.</div>
+    </section>
+
+    <section class="card">
+      <div class="panel-title">
+        <h2>Scadenze</h2>
+        <span id="recordCount" class="metric-note">0 elementi</span>
+      </div>
+      <div id="list" class="list"></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="confirmDialog">
+  <div class="dialog-body">
+    <h3 id="dialogTitle">Conferma</h3>
+    <p id="dialogText"></p>
+    <div class="dialog-actions">
+      <button class="btn" id="dialogCancel">Annulla</button>
+      <button class="btn danger" id="dialogConfirm">Conferma</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORAGE_KEY = 'scadenziario_pagamenti_v1';
+  const SCHEMA_VERSION = 1;
+
+  const state = {
+    scope: 'personal',
+    records: [],
+    filters: { search:'', status:'all', month:'', sort:'dateAsc' },
+    pendingConfirm: null
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    form:$('paymentForm'), recordId:$('recordId'), title:$('title'), amount:$('amount'),
+    dueDate:$('dueDate'), payee:$('payee'), method:$('method'), notes:$('notes'),
+    list:$('list'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
+    cancelEditBtn:$('cancelEditBtn'), search:$('search'), statusFilter:$('statusFilter'),
+    monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
+    overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
+    weekCount:$('weekCount'), paidTotal:$('paidTotal'), recordCount:$('recordCount'),
+    exportBtn:$('exportBtn'), importBtn:$('importBtn'), importFile:$('importFile'), resetBtn:$('resetBtn'),
+    toast:$('toast'), confirmDialog:$('confirmDialog'), dialogTitle:$('dialogTitle'),
+    dialogText:$('dialogText'), dialogCancel:$('dialogCancel'), dialogConfirm:$('dialogConfirm')
+  };
+
+  function uid(){
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'r_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  function todayISO(){
+    const d = new Date();
+    const local = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,10);
+  }
+
+  function parseISODate(s){
+    const [y,m,d] = s.split('-').map(Number);
+    return new Date(y, m-1, d, 12, 0, 0);
+  }
+
+  function formatDate(s){
+    if(!s) return '';
+    return new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}).format(parseISODate(s));
+  }
+
+  function money(v){
+    return new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(Number(v)||0);
+  }
+
+  function daysFromToday(dateStr){
+    const one = 86400000;
+    const t = parseISODate(todayISO());
+    const d = parseISODate(dateStr);
+    return Math.round((d-t)/one);
+  }
+
+  function showToast(message){
+    els.toast.textContent = message;
+    els.toast.classList.remove('hidden');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(()=>els.toast.classList.add('hidden'), 2600);
+  }
+
+  function normalizeRecord(raw){
+    if(!raw || typeof raw !== 'object') return null;
+    const scope = ['personal','work','clients'].includes(raw.scope) ? raw.scope : null;
+    const title = String(raw.title||'').trim().slice(0,120);
+    const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(String(raw.dueDate||'')) ? String(raw.dueDate) : '';
+    const amount = Number(raw.amount);
+    if(!scope || !title || !dueDate || !Number.isFinite(amount) || amount < 0) return null;
+    return {
+      id: String(raw.id||uid()),
+      scope, title, amount: Math.round(amount*100)/100, dueDate,
+      payee:String(raw.payee||'').trim().slice(0,120),
+      method:String(raw.method||'').trim().slice(0,80),
+      notes:String(raw.notes||'').trim().slice(0,500),
+      paid:Boolean(raw.paid),
+      paidAt: raw.paidAt ? String(raw.paidAt) : null,
+      createdAt: raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
+      updatedAt: raw.updatedAt ? String(raw.updatedAt) : new Date().toISOString()
+    };
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return;
+      const parsed = JSON.parse(raw);
+      const records = Array.isArray(parsed.records) ? parsed.records.map(normalizeRecord).filter(Boolean) : [];
+      const seen = new Set();
+      state.records = records.filter(r=>{
+        if(seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
+    }catch(err){
+      console.error(err);
+      showToast('Backup locale non leggibile: dati non sovrascritti.');
+    }
+  }
+
+  function save(){
+    const payload = { schemaVersion: SCHEMA_VERSION, savedAt:new Date().toISOString(), records:state.records };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }
+
+  function getScopeRecords(){
+    return state.records.filter(r=>r.scope===state.scope);
+  }
+
+  function recordStatus(r){
+    if(r.paid) return 'paid';
+    const days = daysFromToday(r.dueDate);
+    if(days < 0) return 'overdue';
+    if(days === 0) return 'today';
+    return 'upcoming';
+  }
+
+  function filterRecords(records){
+    const q = state.filters.search.trim().toLowerCase();
+    let out = records.filter(r=>{
+      if(q && ![r.title,r.payee,r.method,r.notes].join(' ').toLowerCase().includes(q)) return false;
+      const st = recordStatus(r);
+      if(state.filters.status==='open' && r.paid) return false;
+      if(state.filters.status==='overdue' && st!=='overdue') return false;
+      if(state.filters.status==='today' && st!=='today') return false;
+      if(state.filters.status==='paid' && st!=='paid') return false;
+      if(state.filters.month && !r.dueDate.startsWith(state.filters.month)) return false;
+      return true;
+    });
+
+    out.sort((a,b)=>{
+      switch(state.filters.sort){
+        case 'dateDesc': return b.dueDate.localeCompare(a.dueDate);
+        case 'amountDesc': return b.amount-a.amount;
+        case 'amountAsc': return a.amount-b.amount;
+        default: return a.dueDate.localeCompare(b.dueDate);
+      }
+    });
+    return out;
+  }
+
+  function statusLabel(r){
+    if(r.paid) return {label:'Pagato', cls:'paid'};
+    const days = daysFromToday(r.dueDate);
+    if(days<0) return {label:`Scaduto da ${Math.abs(days)} ${Math.abs(days)===1?'giorno':'giorni'}`, cls:'overdue'};
+    if(days===0) return {label:'Scade oggi', cls:'today'};
+    if(days===1) return {label:'Scade domani', cls:'upcoming'};
+    return {label:`Tra ${days} giorni`, cls:'upcoming'};
+  }
+
+  function renderSummary(){
+    const records = getScopeRecords();
+    const open = records.filter(r=>!r.paid);
+    const overdue = open.filter(r=>daysFromToday(r.dueDate)<0);
+    const week = open.filter(r=> {
+      const d=daysFromToday(r.dueDate); return d>=0 && d<=7;
+    });
+    const paid = records.filter(r=>r.paid);
+
+    const sum = arr => arr.reduce((a,r)=>a+r.amount,0);
+    els.dueTotal.textContent = money(sum(open));
+    els.overdueTotal.textContent = money(sum(overdue));
+    els.overdueCount.textContent = `${overdue.length} ${overdue.length===1?'pagamento':'pagamenti'}`;
+    els.weekTotal.textContent = money(sum(week));
+    els.weekCount.textContent = `${week.length} ${week.length===1?'pagamento':'pagamenti'}`;
+    els.paidTotal.textContent = money(sum(paid));
+  }
+
+  function renderList(){
+    const records = filterRecords(getScopeRecords());
+    els.recordCount.textContent = `${records.length} ${records.length===1?'elemento':'elementi'}`;
+    els.list.innerHTML = '';
+    if(!records.length){
+      const div = document.createElement('div');
+      div.className='empty';
+      div.textContent='Nessuna scadenza trovata.';
+      els.list.appendChild(div);
+      return;
+    }
+    for(const r of records){
+      const st = statusLabel(r);
+      const item = document.createElement('article');
+      item.className = `item ${st.cls} ${r.paid?'paid':''}`;
+      const main = document.createElement('div');
+      main.className='item-main';
+
+      const title = document.createElement('div');
+      title.className='item-title';
+      title.textContent=r.title;
+
+      const meta = document.createElement('div');
+      meta.className='item-meta';
+
+      const parts = [
+        `Scadenza: ${formatDate(r.dueDate)}`,
+        r.payee ? `A: ${r.payee}` : '',
+        r.method ? `Metodo: ${r.method}` : ''
+      ].filter(Boolean);
+
+      for(const p of parts){
+        const span=document.createElement('span');
+        span.textContent=p;
+        meta.appendChild(span);
+      }
+
+      const status = document.createElement('div');
+      status.className=`status ${st.cls}`;
+      status.style.marginTop='8px';
+      status.textContent=st.label;
+
+      main.append(title,meta,status);
+
+      if(r.notes){
+        const notes=document.createElement('div');
+        notes.className='metric-note';
+        notes.style.marginTop='8px';
+        notes.textContent=r.notes;
+        main.appendChild(notes);
+      }
+
+      const side = document.createElement('div');
+      const amount = document.createElement('div');
+      amount.className='amount';
+      amount.textContent=money(r.amount);
+
+      const actions = document.createElement('div');
+      actions.className='actions';
+
+      const paidBtn = document.createElement('button');
+      paidBtn.className='mini';
+      paidBtn.textContent = r.paid ? 'Segna non pagato' : 'Segna pagato';
+      paidBtn.addEventListener('click',()=>togglePaid(r.id));
+
+      const editBtn = document.createElement('button');
+      editBtn.className='mini';
+      editBtn.textContent='Modifica';
+      editBtn.addEventListener('click',()=>startEdit(r.id));
+
+      const delBtn = document.createElement('button');
+      delBtn.className='mini';
+      delBtn.textContent='Elimina';
+      delBtn.addEventListener('click',()=>confirmAction(
+        'Elimina scadenza',
+        `Eliminare "${r.title}"?`,
+        ()=>deleteRecord(r.id)
+      ));
+
+      actions.append(paidBtn,editBtn,delBtn);
+      side.append(amount,actions);
+      item.append(main,side);
+      els.list.appendChild(item);
+    }
+  }
+
+  function renderScope(){
+    document.querySelectorAll('.tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.scope===state.scope));
+    const scopeLabels = {
+      personal: 'Personale',
+      work: 'Lavoro',
+      clients: 'Clienti'
+    };
+    els.scopeBadge.textContent = scopeLabels[state.scope] || 'Personale';
+    els.scopeBadge.className = `badge ${state.scope}`;
+    renderSummary();
+    renderList();
+  }
+
+  function resetForm(){
+    els.form.reset();
+    els.recordId.value='';
+    els.formTitle.textContent='Nuova scadenza';
+    els.saveBtn.textContent='Salva scadenza';
+    els.cancelEditBtn.classList.add('hidden');
+    els.dueDate.value=todayISO();
+  }
+
+  function startEdit(id){
+    const r=state.records.find(x=>x.id===id);
+    if(!r) return;
+    els.recordId.value=r.id;
+    els.title.value=r.title;
+    els.amount.value=r.amount;
+    els.dueDate.value=r.dueDate;
+    els.payee.value=r.payee;
+    els.method.value=r.method;
+    els.notes.value=r.notes;
+    els.formTitle.textContent='Modifica scadenza';
+    els.saveBtn.textContent='Salva modifiche';
+    els.cancelEditBtn.classList.remove('hidden');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function isLikelyDuplicate(candidate, ignoreId=''){
+    return state.records.some(r =>
+      r.id!==ignoreId &&
+      r.scope===candidate.scope &&
+      r.title.toLowerCase()===candidate.title.toLowerCase() &&
+      r.dueDate===candidate.dueDate &&
+      Math.abs(r.amount-candidate.amount)<0.001
+    );
+  }
+
+  function onSubmit(e){
+    e.preventDefault();
+    const id=els.recordId.value;
+    const candidate = normalizeRecord({
+      id:id||uid(), scope:state.scope, title:els.title.value, amount:els.amount.value,
+      dueDate:els.dueDate.value, payee:els.payee.value, method:els.method.value, notes:els.notes.value,
+      paid:false
+    });
+    if(!candidate){
+      showToast('Compila pagamento, importo e data di scadenza.');
+      return;
+    }
+    if(isLikelyDuplicate(candidate,id)){
+      showToast('Scadenza duplicata: stesso nome, data e importo.');
+      return;
+    }
+
+    if(id){
+      const idx=state.records.findIndex(r=>r.id===id);
+      if(idx<0) return;
+      const prev=state.records[idx];
+      state.records[idx]={...candidate, paid:prev.paid, paidAt:prev.paidAt, createdAt:prev.createdAt, updatedAt:new Date().toISOString()};
+      showToast('Scadenza aggiornata.');
+    }else{
+      state.records.push({...candidate, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()});
+      showToast('Scadenza salvata.');
+    }
+    save();
+    resetForm();
+    renderScope();
+  }
+
+  function togglePaid(id){
+    const r=state.records.find(x=>x.id===id);
+    if(!r) return;
+    r.paid=!r.paid;
+    r.paidAt=r.paid ? new Date().toISOString() : null;
+    r.updatedAt=new Date().toISOString();
+    save();
+    renderScope();
+    showToast(r.paid?'Pagamento segnato come pagato.':'Pagamento riaperto.');
+  }
+
+  function deleteRecord(id){
+    state.records=state.records.filter(r=>r.id!==id);
+    save(); renderScope(); resetForm(); showToast('Scadenza eliminata.');
+  }
+
+  function confirmAction(title,text,fn){
+    state.pendingConfirm=fn;
+    els.dialogTitle.textContent=title;
+    els.dialogText.textContent=text;
+    els.confirmDialog.showModal();
+  }
+
+  function exportBackup(){
+    const payload={schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),records:state.records};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`scadenziario-backup-${todayISO()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    showToast('Backup esportato.');
+  }
+
+  async function importBackup(file){
+    try{
+      const text=await file.text();
+      const parsed=JSON.parse(text);
+      if(!parsed || !Array.isArray(parsed.records)) throw new Error('Formato non valido');
+      const normalized=parsed.records.map(normalizeRecord).filter(Boolean);
+      const seen=new Set();
+      const deduped=normalized.filter(r=>{
+        const key=`${r.scope}|${r.title.toLowerCase()}|${r.dueDate}|${r.amount}`;
+        if(seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+      if(normalized.length && !deduped.length) throw new Error('Nessun record valido');
+      const previous=state.records.slice();
+      state.records=deduped;
+      try{
+        save();
+      }catch(err){
+        state.records=previous;
+        throw err;
+      }
+      resetForm(); renderScope();
+      showToast(`Backup importato: ${deduped.length} scadenze.`);
+    }catch(err){
+      console.error(err);
+      showToast('Import non riuscito: file JSON non valido.');
+    }finally{
+      els.importFile.value='';
+    }
+  }
+
+  document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+    state.scope=btn.dataset.scope;
+    resetForm();
+    renderScope();
+  }));
+
+  els.form.addEventListener('submit',onSubmit);
+  els.cancelEditBtn.addEventListener('click',resetForm);
+
+  els.search.addEventListener('input',()=>{state.filters.search=els.search.value;renderList();});
+  els.statusFilter.addEventListener('change',()=>{state.filters.status=els.statusFilter.value;renderList();});
+  els.monthFilter.addEventListener('change',()=>{state.filters.month=els.monthFilter.value;renderList();});
+  els.sortBy.addEventListener('change',()=>{state.filters.sort=els.sortBy.value;renderList();});
+
+  els.exportBtn.addEventListener('click',exportBackup);
+  els.importBtn.addEventListener('click',()=>els.importFile.click());
+  els.importFile.addEventListener('change',()=>els.importFile.files[0] && importBackup(els.importFile.files[0]));
+  els.resetBtn.addEventListener('click',()=>confirmAction(
+    'Azzera tutto',
+    'Eliminare tutte le scadenze di lavoro e personali? Prima puoi esportare un backup.',
+    ()=>{state.records=[];save();resetForm();renderScope();showToast('Tutti i dati sono stati eliminati.');}
+  ));
+
+  els.dialogCancel.addEventListener('click',()=>{state.pendingConfirm=null;els.confirmDialog.close();});
+  els.dialogConfirm.addEventListener('click',()=>{
+    const fn=state.pendingConfirm; state.pendingConfirm=null; els.confirmDialog.close(); if(fn) fn();
+  });
+
+  window.addEventListener('error',e=>console.error('Runtime error:',e.error||e.message));
+  window.addEventListener('unhandledrejection',e=>console.error('Unhandled rejection:',e.reason));
+
+  load();
+  resetForm();
+  renderScope();
+})();
+</script>
+</body>
+</html>
