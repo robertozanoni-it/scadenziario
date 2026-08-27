@@ -88,6 +88,9 @@
     body.scope-clients .item{background:color-mix(in srgb, var(--clients-bg) 82%, var(--panel));border-color:var(--clients-border)}
 
     @supports not (background: color-mix(in srgb, white 50%, black)) {
+      .alert-box.personal{background:var(--personal-bg)}
+      .alert-box.work{background:var(--work-bg)}
+      .alert-box.clients{background:var(--clients-bg)}
       body.scope-personal .item{background:var(--personal-bg)}
       body.scope-work .item{background:var(--work-bg)}
       body.scope-clients .item{background:var(--clients-bg)}
@@ -114,10 +117,21 @@
     .empty{text-align:center;padding:42px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
     .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
     .alerts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
-    .alert-box{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:14px;padding:14px 16px;min-height:112px}
-    .alert-box.personal{background:var(--personal-bg);border-color:var(--personal-border)}
-    .alert-box.work{background:var(--work-bg);border-color:var(--work-border)}
-    .alert-box.clients{background:var(--clients-bg);border-color:var(--clients-border)}
+    .alert-box{border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:14px;padding:14px 16px;min-height:112px;cursor:pointer;transition:transform .15s ease,filter .15s ease}
+    .alert-box:hover{transform:translateY(-2px);filter:brightness(1.08)}
+    .alert-box:focus{outline:2px solid var(--text);outline-offset:2px}
+    .alert-box.personal{background:color-mix(in srgb,var(--personal-bg) 62%,transparent);border-color:var(--personal-border)}
+    .alert-box.work{background:color-mix(in srgb,var(--work-bg) 62%,transparent);border-color:var(--work-border)}
+    .alert-box.clients{background:color-mix(in srgb,var(--clients-bg) 62%,transparent);border-color:var(--clients-border)}
+    .alert-detail{grid-column:1/-1;border:1px solid var(--line);border-radius:14px;padding:16px;display:none}
+    .alert-detail.open{display:block}
+    .alert-detail.personal{background:var(--personal-bg);border-color:var(--personal-border)}
+    .alert-detail.work{background:var(--work-bg);border-color:var(--work-border)}
+    .alert-detail.clients{background:var(--clients-bg);border-color:var(--clients-border)}
+    .alert-detail-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(127,127,127,.22);cursor:pointer}
+    .alert-detail-row:last-child{border-bottom:0}
+    .alert-detail-row:hover{filter:brightness(1.12)}
+    @media(max-width:650px){.alert-detail-row{grid-template-columns:1fr}.alert-detail-amount{font-weight:800}}
     .alert-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .alert-head strong{margin:0}
     .alert-count{font-size:12px;font-weight:800;padding:4px 8px;border-radius:999px;border:1px solid currentColor}
@@ -686,31 +700,32 @@
 
       const box=document.createElement('div');
       box.className=`alert-box ${scopeInfo.key}`;
+      box.tabIndex=0;
+      box.setAttribute('role','button');
+      box.setAttribute('aria-expanded','false');
+      box.setAttribute('aria-label',`Apri scadenze in avviso ${scopeInfo.label}`);
 
       const head=document.createElement('div');
       head.className='alert-head';
-
       const strong=document.createElement('strong');
       strong.textContent=scopeInfo.label;
-
       const count=document.createElement('span');
       count.className='alert-count';
       count.textContent=`${upcoming.length} ${upcoming.length===1?'avviso':'avvisi'}`;
-
       head.append(strong,count);
       box.appendChild(head);
 
       if(upcoming.length){
         const ul=document.createElement('ul');
         ul.className='alert-list';
-        upcoming.slice(0,6).forEach(r=>{
+        upcoming.slice(0,3).forEach(r=>{
           const li=document.createElement('li');
           li.textContent=`${formatDate(r.dueDate)} — ${r.title} — ${money(r.amount)}`;
           ul.appendChild(li);
         });
-        if(upcoming.length>6){
+        if(upcoming.length>3){
           const li=document.createElement('li');
-          li.textContent=`+ altre ${upcoming.length-6}`;
+          li.textContent=`+ altre ${upcoming.length-3}`;
           ul.appendChild(li);
         }
         box.appendChild(ul);
@@ -721,7 +736,55 @@
         box.appendChild(empty);
       }
 
-      els.alerts.appendChild(box);
+      const detail=document.createElement('div');
+      detail.className=`alert-detail ${scopeInfo.key}`;
+      detail.id=`alert-detail-${scopeInfo.key}`;
+
+      const title=document.createElement('strong');
+      title.textContent=`${scopeInfo.label} — Scadenze entro 7 giorni`;
+      detail.appendChild(title);
+
+      if(upcoming.length){
+        upcoming.forEach(r=>{
+          const row=document.createElement('div');
+          row.className='alert-detail-row';
+          row.tabIndex=0;
+          row.setAttribute('role','button');
+          row.setAttribute('aria-label',`Modifica ${r.title}`);
+          const date=document.createElement('span');
+          date.textContent=formatDate(r.dueDate);
+          const name=document.createElement('span');
+          name.textContent=r.title;
+          const amount=document.createElement('span');
+          amount.className='alert-detail-amount';
+          amount.textContent=money(r.amount);
+          const edit=()=>{ state.scope=r.scope; renderScope(); startEdit(r.id); };
+          row.addEventListener('click',(e)=>{e.stopPropagation();edit();});
+          row.addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();edit();}});
+          row.append(date,name,amount);
+          detail.appendChild(row);
+        });
+      }else{
+        const empty=document.createElement('div');
+        empty.className='alert-empty';
+        empty.textContent='Non ci sono scadenze da mostrare.';
+        detail.appendChild(empty);
+      }
+
+      const toggle=()=>{
+        const wasOpen=detail.classList.contains('open');
+        document.querySelectorAll('.alert-detail.open').forEach(x=>x.classList.remove('open'));
+        document.querySelectorAll('.alert-box[aria-expanded="true"]').forEach(x=>x.setAttribute('aria-expanded','false'));
+        if(!wasOpen){
+          detail.classList.add('open');
+          box.setAttribute('aria-expanded','true');
+          detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+        }
+      };
+      box.addEventListener('click',toggle);
+      box.addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
+
+      els.alerts.append(box,detail);
     });
   }
 
