@@ -149,7 +149,9 @@
     @media(max-width:650px){.alert-detail-row{grid-template-columns:1fr}.alert-detail-amount{font-weight:800}}
     .alert-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .alert-head strong{margin:0}
-    .alert-count{font-size:12px;font-weight:800;padding:4px 8px;border-radius:999px;border:1px solid currentColor}
+    .alert-count{font-size:12px;font-weight:800;padding:4px 8px;border-radius:999px;border:1px solid #4b5563;background:#000;color:#fff}
+    .alert-count.has-alerts{background:#ff1a0a;color:#fff;border-color:#ff1a0a;box-shadow:0 0 14px rgba(255,26,10,.35)}
+    .alert-count.no-alerts{background:#000;color:#fff;border-color:#4b5563;box-shadow:none}
     .alert-empty{color:var(--muted);font-size:13px;margin-top:10px}
     @media(max-width:900px){.alerts{grid-template-columns:1fr}}
 
@@ -759,7 +761,7 @@
       const strong=document.createElement('strong');
       strong.textContent=scopeInfo.label;
       const count=document.createElement('span');
-      count.className='alert-count';
+      count.className=`alert-count ${upcoming.length>0?'has-alerts':'no-alerts'}`;
       count.textContent=`${upcoming.length} ${upcoming.length===1?'avviso':'avvisi'}`;
       head.append(strong,count);
       box.appendChild(head);
