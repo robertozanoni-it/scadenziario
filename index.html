@@ -97,7 +97,9 @@
     }
 
     .list{display:grid;gap:10px}
-    .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}
+    .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+    .item:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+    .item:focus{outline:2px solid var(--text);outline-offset:2px}
     .item.overdue{border-left:5px solid var(--danger)}
     .item.today{border-left:5px solid var(--warn)}
     .item.paid{opacity:.62}
@@ -523,6 +525,16 @@
       const st = statusLabel(r);
       const item = document.createElement('article');
       item.className = `item ${st.cls} ${r.paid?'paid':''}`;
+      item.tabIndex = 0;
+      item.setAttribute('role','button');
+      item.setAttribute('aria-label',`Modifica scadenza ${r.title}`);
+      item.addEventListener('click',()=>startEdit(r.id));
+      item.addEventListener('keydown',(e)=>{
+        if(e.key==='Enter' || e.key===' '){
+          e.preventDefault();
+          startEdit(r.id);
+        }
+      });
       const main = document.createElement('div');
       main.className='item-main';
 
@@ -573,21 +585,21 @@
       const paidBtn = document.createElement('button');
       paidBtn.className='mini';
       paidBtn.textContent = r.paid ? 'Segna non pagato' : 'Segna pagato';
-      paidBtn.addEventListener('click',()=>togglePaid(r.id));
+      paidBtn.addEventListener('click',(e)=>{e.stopPropagation();togglePaid(r.id);});
 
       const editBtn = document.createElement('button');
       editBtn.className='mini';
       editBtn.textContent='Modifica';
-      editBtn.addEventListener('click',()=>startEdit(r.id));
+      editBtn.addEventListener('click',(e)=>{e.stopPropagation();startEdit(r.id);});
 
       const delBtn = document.createElement('button');
       delBtn.className='mini';
       delBtn.textContent='Elimina';
-      delBtn.addEventListener('click',()=>confirmAction(
+      delBtn.addEventListener('click',(e)=>{e.stopPropagation();confirmAction(
         'Elimina scadenza',
         `Eliminare "${r.title}"?`,
         ()=>deleteRecord(r.id)
-      ));
+      );});
 
       actions.append(paidBtn,editBtn,delBtn);
       side.append(amount,actions);
