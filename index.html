@@ -126,12 +126,17 @@
     .empty{text-align:center;padding:42px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
     .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
     .alerts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
-    .alert-box{border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:14px;padding:14px 16px;min-height:112px;cursor:pointer;transition:transform .15s ease,filter .15s ease}
+    .alert-box{border:1px solid var(--line);border-left-width:5px;border-left-style:solid;border-radius:14px;padding:14px 16px;min-height:112px;cursor:pointer;transition:transform .15s ease,filter .15s ease}
     .alert-box:hover{transform:translateY(-2px);filter:brightness(1.08)}
+    .alert-box.italy{border-left-color:var(--italy-border)!important}
+    .alert-box.england{border-left-color:var(--england-border)!important}
+    .alert-box.work{border-left-color:var(--work-border)!important}
+    .alert-box.clients{border-left-color:var(--clients-border)!important}
+
     .alert-box:focus{outline:2px solid var(--text);outline-offset:2px}
     .alert-box.personal{background:color-mix(in srgb,var(--personal-bg) 62%,transparent);border-color:var(--personal-border)}
-    .alert-box.work{background:color-mix(in srgb,var(--work-bg) 62%,transparent);border-color:var(--work-border)}
-    .alert-box.clients{background:color-mix(in srgb,var(--clients-bg) 62%,transparent);border-color:var(--clients-border)}
+    .alert-box.work{background:color-mix(in srgb,var(--work-bg) 68%,transparent);border-color:var(--work-border);border-left-color:var(--work-border)}
+    .alert-box.clients{background:color-mix(in srgb,var(--clients-bg) 68%,transparent);border-color:var(--clients-border);border-left-color:var(--clients-border)}
     .alert-detail{grid-column:1/-1;border:1px solid var(--line);border-radius:14px;padding:16px;display:none}
     .alert-detail.open{display:block}
     .alert-detail.italy{background:var(--italy-bg);border-color:var(--italy-border)}
