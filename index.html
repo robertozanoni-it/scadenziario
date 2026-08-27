@@ -12,8 +12,13 @@
       --work:#dbeafe;--work-text:#1d4ed8;--personal:#fce7f3;--personal-text:#be185d;--clients:#dcfce7;--clients-text:#15803d;
       --shadow:0 10px 30px rgba(0,0,0,.06);--radius:18px;
     }
+    :root[data-theme="dark"]{
+      --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
+      --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
+      --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;--shadow:none;
+    }
     @media (prefers-color-scheme: dark){
-      :root{
+      :root:not([data-theme="light"]){
         --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
         --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
         --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;--shadow:none;
@@ -72,6 +77,11 @@
     .status.paid{color:var(--ok)}
     .empty{text-align:center;padding:42px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
     .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
+    .alerts{display:grid;gap:10px;margin-bottom:18px}
+    .alert-box{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:14px;padding:14px 16px}
+    .alert-box strong{display:block;margin-bottom:4px}
+    .alert-list{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+    .recurrence-note{font-size:12px;color:var(--muted);margin-top:4px}
     .hidden{display:none!important}
     .toast{position:fixed;right:20px;bottom:20px;background:var(--primary);color:var(--bg);padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);max-width:min(360px,calc(100vw - 40px));z-index:50}
     dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--text);padding:0;max-width:560px;width:calc(100% - 32px)}
@@ -101,6 +111,8 @@
       <p class="subtitle">Solo scadenze economiche, separate tra personale, lavoro e clienti.</p>
     </div>
     <div class="toolbar">
+      <button class="btn" id="themeBtn" type="button">Modalità dark</button>
+      <button class="btn" id="reportBtn" type="button">Download report</button>
       <button class="btn" id="exportBtn">Esporta backup</button>
       <button class="btn" id="importBtn">Importa backup</button>
       <button class="btn danger" id="resetBtn">Azzera tutto</button>
@@ -113,6 +125,8 @@
     <button class="tab" data-scope="work">Lavoro</button>
     <button class="tab" data-scope="clients">Clienti</button>
   </nav>
+
+  <section id="alerts" class="alerts" aria-live="polite"></section>
 
   <section class="summary" aria-label="Riepilogo">
     <div class="card">
@@ -214,6 +228,16 @@
           </select>
         </div>
         <div class="field">
+          <label for="recurrence">Ricorrenza</label>
+          <select id="recurrence">
+            <option value="none">Nessuna</option>
+            <option value="weekly">Settimanale</option>
+            <option value="monthly">Mensile</option>
+            <option value="yearly">Annuale</option>
+          </select>
+          <div class="recurrence-note">Quando una scadenza ricorrente viene segnata come pagata, viene creata automaticamente la successiva.</div>
+        </div>
+        <div class="field">
           <label for="notes">Note</label>
           <textarea id="notes" rows="3" maxlength="500" placeholder="IBAN, riferimento fattura, note utili..."></textarea>
         </div>
@@ -271,6 +295,7 @@
     records: [],
     clients: [],
     filters: { search:'', status:'all', month:'', sort:'dateAsc' },
+    settings: { theme:'system' },
     pendingConfirm: null
   };
 
@@ -280,12 +305,14 @@
     dueDate:$('dueDate'), clientName:$('clientName'), country:$('country'),
     clientField:$('clientField'), countryField:$('countryField'), clientManager:$('clientManager'),
     clientSuggestions:$('clientSuggestions'), newClient:$('newClient'), addClientBtn:$('addClientBtn'),
-    clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'), notes:$('notes'),
+    clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'),
+    recurrence:$('recurrence'), notes:$('notes'),
     list:$('list'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
     cancelEditBtn:$('cancelEditBtn'), search:$('search'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
     weekCount:$('weekCount'), paidTotal:$('paidTotal'), recordCount:$('recordCount'),
+    themeBtn:$('themeBtn'), reportBtn:$('reportBtn'), alerts:$('alerts'),
     exportBtn:$('exportBtn'), importBtn:$('importBtn'), importFile:$('importFile'), resetBtn:$('resetBtn'),
     toast:$('toast'), confirmDialog:$('confirmDialog'), dialogTitle:$('dialogTitle'),
     dialogText:$('dialogText'), dialogCancel:$('dialogCancel'), dialogConfirm:$('dialogConfirm')
@@ -343,6 +370,7 @@
       clientName:String(raw.clientName||raw.payee||'').trim().slice(0,120),
       country: raw.scope === 'personal' ? (raw.country === 'Inghilterra' ? 'Inghilterra' : 'Italia') : '',
       method:String(raw.method||'').trim().slice(0,80),
+      recurrence:['none','weekly','monthly','yearly'].includes(raw.recurrence) ? raw.recurrence : 'none',
       notes:String(raw.notes||'').trim().slice(0,500),
       paid:Boolean(raw.paid),
       paidAt: raw.paidAt ? String(raw.paidAt) : null,
@@ -366,6 +394,9 @@
       state.clients = Array.isArray(parsed.clients)
         ? [...new Set(parsed.clients.map(x=>String(x||'').trim().slice(0,120)).filter(Boolean))]
         : [];
+      if(parsed.settings && ['system','light','dark'].includes(parsed.settings.theme)){
+        state.settings.theme = parsed.settings.theme;
+      }
     }catch(err){
       console.error(err);
       showToast('Backup locale non leggibile: dati non sovrascritti.');
@@ -373,7 +404,7 @@
   }
 
   function save(){
-    const payload = { schemaVersion: SCHEMA_VERSION, savedAt:new Date().toISOString(), records:state.records, clients:state.clients };
+    const payload = { schemaVersion: SCHEMA_VERSION, savedAt:new Date().toISOString(), records:state.records, clients:state.clients, settings:state.settings };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }
 
@@ -469,7 +500,8 @@
         `Scadenza: ${formatDate(r.dueDate)}`,
         r.scope === 'personal' && r.country ? `Paese: ${r.country}` : '',
         r.scope !== 'personal' && r.clientName ? `Cliente: ${r.clientName}` : '',
-        r.method ? `Metodo: ${r.method}` : ''
+        r.method ? `Metodo: ${r.method}` : '',
+        r.recurrence && r.recurrence!=='none' ? `Ricorrenza: ${recurrenceLabel(r.recurrence)}` : ''
       ].filter(Boolean);
 
       for(const p of parts){
@@ -525,6 +557,118 @@
       item.append(main,side);
       els.list.appendChild(item);
     }
+  }
+
+  function recurrenceLabel(value){
+    return ({weekly:'Settimanale',monthly:'Mensile',yearly:'Annuale',none:'Nessuna'})[value] || 'Nessuna';
+  }
+
+  function addPeriod(dateStr, recurrence){
+    const d=parseISODate(dateStr);
+    if(recurrence==='weekly') d.setDate(d.getDate()+7);
+    else if(recurrence==='monthly'){
+      const day=d.getDate();
+      d.setDate(1);
+      d.setMonth(d.getMonth()+1);
+      const max=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+      d.setDate(Math.min(day,max));
+    }else if(recurrence==='yearly'){
+      const month=d.getMonth(), day=d.getDate();
+      d.setFullYear(d.getFullYear()+1,month,1);
+      const max=new Date(d.getFullYear(),month+1,0).getDate();
+      d.setDate(Math.min(day,max));
+    }
+    const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,10);
+  }
+
+  function createNextRecurring(r){
+    if(!r.recurrence || r.recurrence==='none') return null;
+    const nextDate=addPeriod(r.dueDate,r.recurrence);
+    const exists=state.records.some(x =>
+      x.scope===r.scope &&
+      x.title.toLowerCase()===r.title.toLowerCase() &&
+      x.dueDate===nextDate &&
+      Math.abs(x.amount-r.amount)<0.001
+    );
+    if(exists) return null;
+    const next={...r,id:uid(),dueDate:nextDate,paid:false,paidAt:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    state.records.push(next);
+    return next;
+  }
+
+  function applyTheme(){
+    const theme=state.settings.theme;
+    if(theme==='dark') document.documentElement.setAttribute('data-theme','dark');
+    else if(theme==='light') document.documentElement.setAttribute('data-theme','light');
+    else document.documentElement.removeAttribute('data-theme');
+    const effectiveDark = theme==='dark' || (theme==='system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    els.themeBtn.textContent = effectiveDark ? 'Modalità chiara' : 'Modalità dark';
+  }
+
+  function toggleTheme(){
+    const isCurrentlyDark = document.documentElement.getAttribute('data-theme')==='dark' ||
+      (!document.documentElement.hasAttribute('data-theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    state.settings.theme = isCurrentlyDark ? 'light' : 'dark';
+    save();
+    applyTheme();
+  }
+
+  function renderAlerts(){
+    const records=getScopeRecords().filter(r=>!r.paid);
+    const upcoming=records.filter(r=>{const d=daysFromToday(r.dueDate);return d>=0 && d<=7;})
+      .sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
+    els.alerts.innerHTML='';
+    if(!upcoming.length) return;
+    const box=document.createElement('div');
+    box.className='alert-box';
+    const strong=document.createElement('strong');
+    strong.textContent=`Avviso: ${upcoming.length} ${upcoming.length===1?'scadenza':'scadenze'} entro 7 giorni`;
+    const ul=document.createElement('ul');
+    ul.className='alert-list';
+    upcoming.slice(0,8).forEach(r=>{
+      const li=document.createElement('li');
+      li.textContent=`${formatDate(r.dueDate)} — ${r.title} — ${money(r.amount)}`;
+      ul.appendChild(li);
+    });
+    if(upcoming.length>8){
+      const li=document.createElement('li');
+      li.textContent=`+ altre ${upcoming.length-8}`;
+      ul.appendChild(li);
+    }
+    box.append(strong,ul);
+    els.alerts.appendChild(box);
+  }
+
+  function escapeCsvCell(v){
+    let s=String(v ?? '');
+    if(/^[=+\-@]/.test(s)) s="'"+s;
+    if(/[",\n]/.test(s)) s='"'+s.replace(/"/g,'""')+'"';
+    return s;
+  }
+
+  function downloadReport(){
+    const headers=['Sezione','Pagamento','Importo','Scadenza','Stato','Cliente','Paese','Metodo','Ricorrenza','Note'];
+    const rows=state.records.slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).map(r=>[
+      r.scope==='personal'?'Personale':r.scope==='work'?'Lavoro':'Clienti',
+      r.title,
+      r.amount.toFixed(2),
+      r.dueDate,
+      recordStatus(r)==='paid'?'Pagato':recordStatus(r)==='overdue'?'Scaduto':recordStatus(r)==='today'?'Oggi':'Da pagare',
+      r.clientName||'',
+      r.country||'',
+      r.method||'',
+      recurrenceLabel(r.recurrence),
+      r.notes||''
+    ]);
+    const csv='\ufeff'+[headers,...rows].map(row=>row.map(escapeCsvCell).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`report-scadenziario-${todayISO()}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    showToast('Report CSV scaricato.');
   }
 
   function updateScopeFields(){
@@ -589,6 +733,7 @@
     els.scopeBadge.className = `badge ${state.scope}`;
     updateScopeFields();
     renderSummary();
+    renderAlerts();
     renderList();
   }
 
@@ -600,6 +745,7 @@
     els.cancelEditBtn.classList.add('hidden');
     els.dueDate.value=todayISO();
     els.country.value='Italia';
+    els.recurrence.value='none';
     updateScopeFields();
   }
 
@@ -613,6 +759,7 @@
     els.clientName.value=r.clientName || '';
     els.country.value=r.country || 'Italia';
     els.method.value=r.method;
+    els.recurrence.value=r.recurrence || 'none';
     els.notes.value=r.notes;
     els.formTitle.textContent='Modifica scadenza';
     els.saveBtn.textContent='Salva modifiche';
@@ -638,7 +785,7 @@
       dueDate:els.dueDate.value,
       clientName: state.scope==='personal' ? '' : els.clientName.value,
       country: state.scope==='personal' ? els.country.value : '',
-      method:els.method.value, notes:els.notes.value,
+      method:els.method.value, recurrence:els.recurrence.value, notes:els.notes.value,
       paid:false
     });
     if(!candidate){
@@ -671,9 +818,15 @@
     r.paid=!r.paid;
     r.paidAt=r.paid ? new Date().toISOString() : null;
     r.updatedAt=new Date().toISOString();
+    let nextCreated=null;
+    if(r.paid) nextCreated=createNextRecurring(r);
     save();
     renderScope();
-    showToast(r.paid?'Pagamento segnato come pagato.':'Pagamento riaperto.');
+    if(r.paid && nextCreated){
+      showToast(`Pagamento segnato come pagato. Prossima scadenza: ${formatDate(nextCreated.dueDate)}.`);
+    }else{
+      showToast(r.paid?'Pagamento segnato come pagato.':'Pagamento riaperto.');
+    }
   }
 
   function deleteRecord(id){
@@ -689,7 +842,7 @@
   }
 
   function exportBackup(){
-    const payload={schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),records:state.records,clients:state.clients};
+    const payload={schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),records:state.records,clients:state.clients,settings:state.settings};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
@@ -714,15 +867,20 @@
       if(normalized.length && !deduped.length) throw new Error('Nessun record valido');
       const previous=state.records.slice();
       const previousClients=state.clients.slice();
+      const previousSettings={...state.settings};
       state.records=deduped;
       state.clients = Array.isArray(parsed.clients)
         ? [...new Set(parsed.clients.map(x=>String(x||'').trim().slice(0,120)).filter(Boolean))]
         : state.clients;
+      if(parsed.settings && ['system','light','dark'].includes(parsed.settings.theme)){
+        state.settings.theme=parsed.settings.theme;
+      }
       try{
         save();
       }catch(err){
         state.records=previous;
         state.clients=previousClients;
+        state.settings=previousSettings;
         throw err;
       }
       resetForm(); renderScope();
@@ -751,6 +909,8 @@
   els.monthFilter.addEventListener('change',()=>{state.filters.month=els.monthFilter.value;renderList();});
   els.sortBy.addEventListener('change',()=>{state.filters.sort=els.sortBy.value;renderList();});
 
+  els.themeBtn.addEventListener('click',toggleTheme);
+  els.reportBtn.addEventListener('click',downloadReport);
   els.exportBtn.addEventListener('click',exportBackup);
   els.importBtn.addEventListener('click',()=>els.importFile.click());
   els.importFile.addEventListener('change',()=>els.importFile.files[0] && importBackup(els.importFile.files[0]));
@@ -769,6 +929,7 @@
   window.addEventListener('unhandledrejection',e=>console.error('Unhandled rejection:',e.reason));
 
   load();
+  applyTheme();
   resetForm();
   renderScope();
 })();
