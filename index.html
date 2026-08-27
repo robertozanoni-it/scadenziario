@@ -10,32 +10,18 @@
       --bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;
       --primary:#111827;--primary-2:#374151;--danger:#b91c1c;--warn:#b45309;--ok:#047857;
       --work:#dbeafe;--work-text:#1d4ed8;--personal:#fce7f3;--personal-text:#be185d;--clients:#dcfce7;--clients-text:#15803d;
-      --italy-bg:#f3e8ff;--italy-border:#c084fc;
-      --england-bg:#fff7ed;--england-border:#f59e0b;
-      --work-bg:#dbeafe;--work-border:#60a5fa;
-      --clients-bg:#dcfce7;--clients-border:#4ade80;
       --shadow:0 10px 30px rgba(0,0,0,.06);--radius:18px;
     }
     :root[data-theme="dark"]{
       --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
       --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
-      --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;
-      --italy-bg:#241238;--italy-border:#7c3aed;
-      --england-bg:#33220a;--england-border:#f59e0b;
-      --work-bg:#0b2340;--work-border:#2563eb;
-      --clients-bg:#0d2e1b;--clients-border:#16a34a;
-      --shadow:none;
+      --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;--shadow:none;
     }
     @media (prefers-color-scheme: dark){
       :root:not([data-theme="light"]){
         --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
         --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
-        --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;
-        --italy-bg:#241238;--italy-border:#7c3aed;
-        --england-bg:#33220a;--england-border:#f59e0b;
-        --work-bg:#0b2340;--work-border:#2563eb;
-        --clients-bg:#0d2e1b;--clients-border:#16a34a;
-        --shadow:none;
+        --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;--shadow:none;
       }
     }
     *{box-sizing:border-box}
@@ -52,14 +38,10 @@
     .btn.primary{background:var(--primary);color:var(--bg);border-color:var(--primary)}
     .btn.danger{color:var(--danger)}
     .tabs{display:flex;gap:10px;margin-bottom:18px}
-    .tab{flex:1;border:1px solid var(--line);padding:14px 16px;border-radius:14px;font-weight:800;color:var(--text);transition:.2s ease}
-    .tab[data-scope="italy"]{background:var(--italy-bg);border-color:var(--italy-border)}
-    .tab[data-scope="england"]{background:var(--england-bg);border-color:var(--england-border)}
-    .tab[data-scope="work"]{background:var(--work-bg);border-color:var(--work-border)}
-    .tab[data-scope="clients"]{background:var(--clients-bg);border-color:var(--clients-border)}
-    .tab.active{outline:2px solid currentColor;outline-offset:2px;transform:translateY(-1px)}
-    .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);transition:background .2s ease,border-color .2s ease}
+    .tab{flex:1;border:1px solid var(--line);background:var(--panel);padding:14px 16px;border-radius:14px;font-weight:700;color:var(--muted)}
+    .tab.active{color:var(--text);outline:2px solid var(--text);outline-offset:-2px}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
     .metric-label{font-size:13px;color:var(--muted);margin-bottom:6px}
     .metric-value{font-weight:800;font-size:26px}
     .metric-note{font-size:12px;color:var(--muted);margin-top:4px}
@@ -77,38 +59,8 @@
     .badge.work{background:var(--work);color:var(--work-text)}
     .badge.personal{background:var(--personal);color:var(--personal-text)}
     .badge.clients{background:var(--clients);color:var(--clients-text)}
-    body.scope-italy .summary .card,
-    body.scope-italy .filters,
-    body.scope-italy .content > .card{background:var(--italy-bg);border-color:var(--italy-border)}
-    body.scope-england .summary .card,
-    body.scope-england .filters,
-    body.scope-england .content > .card{background:var(--england-bg);border-color:var(--england-border)}
-    body.scope-work .summary .card,
-    body.scope-work .filters,
-    body.scope-work .content > .card{background:var(--work-bg);border-color:var(--work-border)}
-    body.scope-clients .summary .card,
-    body.scope-clients .filters,
-    body.scope-clients .content > .card{background:var(--clients-bg);border-color:var(--clients-border)}
-
-    body.scope-italy .item{background:color-mix(in srgb, var(--italy-bg) 82%, var(--panel));border-color:var(--italy-border)}
-    body.scope-england .item{background:color-mix(in srgb, var(--england-bg) 82%, var(--panel));border-color:var(--england-border)}
-    body.scope-work .item{background:color-mix(in srgb, var(--work-bg) 82%, var(--panel));border-color:var(--work-border)}
-    body.scope-clients .item{background:color-mix(in srgb, var(--clients-bg) 82%, var(--panel));border-color:var(--clients-border)}
-
-    @supports not (background: color-mix(in srgb, white 50%, black)) {
-      .alert-box.personal{background:var(--personal-bg)}
-      .alert-box.work{background:var(--work-bg)}
-      .alert-box.clients{background:var(--clients-bg)}
-      body.scope-italy .item{background:var(--italy-bg)}
-      body.scope-england .item{background:var(--england-bg)}
-      body.scope-work .item{background:var(--work-bg)}
-      body.scope-clients .item{background:var(--clients-bg)}
-    }
-
     .list{display:grid;gap:10px}
-    .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
-    .item:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
-    .item:focus{outline:2px solid var(--text);outline-offset:2px}
+    .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}
     .item.overdue{border-left:5px solid var(--danger)}
     .item.today{border-left:5px solid var(--warn)}
     .item.paid{opacity:.62}
@@ -125,41 +77,10 @@
     .status.paid{color:var(--ok)}
     .empty{text-align:center;padding:42px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
     .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
-    .alerts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
-    .alert-box{border:1px solid var(--line);border-left-width:5px;border-left-style:solid;border-radius:14px;padding:14px 16px;min-height:112px;cursor:pointer;transition:transform .15s ease,filter .15s ease}
-    .alert-box:hover{transform:translateY(-2px);filter:brightness(1.08)}
-    .alert-box.italy{border-left-color:var(--italy-border)!important}
-    .alert-box.england{border-left-color:var(--england-border)!important}
-    .alert-box.work{border-left-color:var(--work-border)!important}
-    .alert-box.clients{border-left-color:var(--clients-border)!important}
-
-    .alert-box:focus{outline:2px solid var(--text);outline-offset:2px}
-    .alert-box.personal{background:color-mix(in srgb,var(--personal-bg) 62%,transparent);border-color:var(--personal-border)}
-    .alert-box.work{background:color-mix(in srgb,var(--work-bg) 68%,transparent);border-color:var(--work-border);border-left-color:var(--work-border)}
-    .alert-box.clients{background:color-mix(in srgb,var(--clients-bg) 68%,transparent);border-color:var(--clients-border);border-left-color:var(--clients-border)}
-    .alert-detail{grid-column:1/-1;border:1px solid var(--line);border-radius:14px;padding:16px;display:none}
-    .alert-detail.open{display:block}
-    .alert-detail.italy{background:var(--italy-bg);border-color:var(--italy-border)}
-    .alert-detail.england{background:var(--england-bg);border-color:var(--england-border)}
-    .alert-detail.work{background:var(--work-bg);border-color:var(--work-border)}
-    .alert-detail.clients{background:var(--clients-bg);border-color:var(--clients-border)}
-    .alert-detail-row{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(127,127,127,.22);cursor:pointer}
-    .alert-detail-row:last-child{border-bottom:0}
-    .alert-detail-row:hover{filter:brightness(1.12)}
-    @media(max-width:650px){.alert-detail-row{grid-template-columns:1fr}.alert-detail-amount{font-weight:800}}
-    .alert-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .alert-head strong{margin:0}
-    .alert-count{font-size:12px;font-weight:800;padding:4px 8px;border-radius:999px;border:1px solid #4b5563;background:#000;color:#fff}
-    .alert-count.has-alerts{background:#ff1a0a;color:#fff;border-color:#ff1a0a;box-shadow:0 0 14px rgba(255,26,10,.35)}
-    .alert-count.no-alerts{background:#000;color:#fff;border-color:#4b5563;box-shadow:none}
-    .alert-empty{color:var(--muted);font-size:13px;margin-top:10px}
-    @media(max-width:900px){.alerts{grid-template-columns:1fr}}
-
+    .alerts{display:grid;gap:10px;margin-bottom:18px}
+    .alert-box{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:14px;padding:14px 16px}
     .alert-box strong{display:block;margin-bottom:4px}
     .alert-list{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
-    .alert-list li{cursor:pointer;padding:4px 6px;border-radius:8px}
-    .alert-list li:hover{background:rgba(255,255,255,.08);color:var(--text)}
-    .alert-list li:focus{outline:2px solid currentColor;outline-offset:2px}
     .recurrence-note{font-size:12px;color:var(--muted);margin-top:4px}
     .hidden{display:none!important}
     .toast{position:fixed;right:20px;bottom:20px;background:var(--primary);color:var(--bg);padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);max-width:min(360px,calc(100vw - 40px));z-index:50}
@@ -167,9 +88,6 @@
     dialog::backdrop{background:rgba(0,0,0,.4)}
     .dialog-body{padding:20px}
     .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
-    @media(max-width:1100px){
-      .summary{grid-template-columns:repeat(3,1fr)}
-    }
     @media(max-width:900px){
       .summary{grid-template-columns:1fr 1fr}
       .filters{grid-template-columns:1fr 1fr}
@@ -190,10 +108,9 @@
   <header class="topbar">
     <div>
       <h1>Scadenziario pagamenti</h1>
-      <p class="subtitle">Solo scadenze economiche, separate tra Italia, Inghilterra, lavoro e clienti.</p>
+      <p class="subtitle">Solo scadenze economiche, separate tra personale, lavoro e clienti.</p>
     </div>
     <div class="toolbar">
-      <button class="btn primary" id="newRecurrenceBtn" type="button">+ Nuova ricorrenza</button>
       <button class="btn" id="themeBtn" type="button">Modalità dark</button>
       <button class="btn" id="reportBtn" type="button">Download report</button>
       <button class="btn" id="exportBtn">Esporta backup</button>
@@ -204,8 +121,7 @@
   </header>
 
   <nav class="tabs" aria-label="Sezioni">
-    <button class="tab active" data-scope="italy">Italia</button>
-    <button class="tab" data-scope="england">Inghilterra</button>
+    <button class="tab active" data-scope="personal">Personale</button>
     <button class="tab" data-scope="work">Lavoro</button>
     <button class="tab" data-scope="clients">Clienti</button>
   </nav>
@@ -214,30 +130,33 @@
 
   <section class="summary" aria-label="Riepilogo">
     <div class="card">
-      <div class="metric-label">Da pagare ora</div>
+      <div class="metric-label">Da pagare</div>
       <div class="metric-value" id="dueTotal">€ 0,00</div>
-      <div class="metric-note" id="dueCount">0 pagamenti entro 7 giorni</div>
+      <div class="metric-note">Scadenze aperte nella sezione</div>
     </div>
-    <div class="card">
+    <div class="card" data-summary="overdue" tabindex="0" role="button">
       <div class="metric-label">Scaduti</div>
       <div class="metric-value" id="overdueTotal">€ 0,00</div>
       <div class="metric-note" id="overdueCount">0 pagamenti</div>
     </div>
-    <div class="card">
-      <div class="metric-label">Scadenze future</div>
-      <div class="metric-value" id="futureTotal">€ 0,00</div>
-      <div class="metric-note" id="futureCount">0 oltre 7 giorni</div>
-    </div>
-    <div class="card">
+    <div class="card" data-summary="week" tabindex="0" role="button">
       <div class="metric-label">In scadenza 7 giorni</div>
       <div class="metric-value" id="weekTotal">€ 0,00</div>
       <div class="metric-note" id="weekCount">0 pagamenti</div>
     </div>
-    <div class="card">
+    <div class="card" data-summary="paid" tabindex="0" role="button">
       <div class="metric-label">Pagati</div>
       <div class="metric-value" id="paidTotal">€ 0,00</div>
       <div class="metric-note">Storico della sezione</div>
     </div>
+  </section>
+
+  <section id="summaryDetail" class="summary-detail hidden" aria-live="polite">
+    <div class="summary-detail-head">
+      <h3 id="summaryDetailTitle">Dettaglio</h3>
+      <button class="btn" id="summaryDetailClose" type="button">Chiudi</button>
+    </div>
+    <div id="summaryDetailContent" class="summary-detail-grid"></div>
   </section>
 
   <section class="filters card">
@@ -274,7 +193,7 @@
     <section class="card">
       <div class="panel-title">
         <h2 id="formTitle">Nuova scadenza</h2>
-        <span class="badge personal" id="scopeBadge">Italia</span>
+        <span class="badge personal" id="scopeBadge">Personale</span>
       </div>
       <form id="paymentForm" class="form-grid" novalidate>
         <input type="hidden" id="recordId" />
@@ -324,7 +243,7 @@
             <option value="monthly">Mensile</option>
             <option value="yearly">Annuale</option>
           </select>
-          <div class="recurrence-note">Quando una scadenza ricorrente viene segnata come pagata, viene creata automaticamente la successiva. Le ricorrenze oltre 7 giorni vengono conteggiate in “Scadenze future”, non in “Da pagare ora”.</div>
+          <div class="recurrence-note">Quando una scadenza ricorrente viene segnata come pagata, viene creata automaticamente la successiva.</div>
         </div>
         <div class="field">
           <label for="notes">Note</label>
@@ -380,7 +299,7 @@
   const SCHEMA_VERSION = 1;
 
   const state = {
-    scope: 'italy',
+    scope: 'personal',
     records: [],
     clients: [],
     filters: { search:'', status:'all', month:'', sort:'dateAsc' },
@@ -400,9 +319,8 @@
     cancelEditBtn:$('cancelEditBtn'), search:$('search'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
-    weekCount:$('weekCount'), paidTotal:$('paidTotal'), dueCount:$('dueCount'),
-    futureTotal:$('futureTotal'), futureCount:$('futureCount'), recordCount:$('recordCount'),
-    newRecurrenceBtn:$('newRecurrenceBtn'), themeBtn:$('themeBtn'), reportBtn:$('reportBtn'), alerts:$('alerts'),
+    weekCount:$('weekCount'), paidTotal:$('paidTotal'), recordCount:$('recordCount'),
+    themeBtn:$('themeBtn'), reportBtn:$('reportBtn'), alerts:$('alerts'),
     exportBtn:$('exportBtn'), importBtn:$('importBtn'), importFile:$('importFile'), resetBtn:$('resetBtn'),
     toast:$('toast'), confirmDialog:$('confirmDialog'), dialogTitle:$('dialogTitle'),
     dialogText:$('dialogText'), dialogCancel:$('dialogCancel'), dialogConfirm:$('dialogConfirm')
@@ -449,12 +367,7 @@
 
   function normalizeRecord(raw){
     if(!raw || typeof raw !== 'object') return null;
-    let scope = null;
-    if(['italy','england','work','clients'].includes(raw.scope)) {
-      scope = raw.scope;
-    } else if(raw.scope === 'personal') {
-      scope = raw.country === 'Inghilterra' ? 'england' : 'italy';
-    }
+    const scope = ['personal','work','clients'].includes(raw.scope) ? raw.scope : null;
     const title = String(raw.title||'').trim().slice(0,120);
     const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(String(raw.dueDate||'')) ? String(raw.dueDate) : '';
     const amount = Number(raw.amount);
@@ -463,7 +376,7 @@
       id: String(raw.id||uid()),
       scope, title, amount: Math.round(amount*100)/100, dueDate,
       clientName:String(raw.clientName||raw.payee||'').trim().slice(0,120),
-      country: scope === 'italy' ? 'Italia' : scope === 'england' ? 'Inghilterra' : '',
+      country: raw.scope === 'personal' ? (raw.country === 'Inghilterra' ? 'Inghilterra' : 'Italia') : '',
       method:String(raw.method||'').trim().slice(0,80),
       recurrence:['none','weekly','monthly','yearly'].includes(raw.recurrence) ? raw.recurrence : 'none',
       notes:String(raw.notes||'').trim().slice(0,500),
@@ -548,35 +461,109 @@
     return {label:`Tra ${days} giorni`, cls:'upcoming'};
   }
 
-  function renderSummary(){
-    const records = getScopeRecords();
-    const open = records.filter(r=>!r.paid);
+  function scopeLabel(scope){
+    return scope==='italy' ? 'Italia' :
+           scope==='england' ? 'Inghilterra' :
+           scope==='work' ? 'Lavoro' : 'Clienti';
+  }
 
-    // "Da pagare ora" = scadenze non pagate da oggi ai prossimi 7 giorni.
-    // Gli scaduti sono separati e le ricorrenze future oltre 7 giorni non gonfiano il totale corrente.
-    const dueNow = open.filter(r=>{
+  function summaryRecords(type){
+    const records=getScopeRecords();
+    if(type==='paid') return records.filter(r=>r.paid);
+    const open=records.filter(r=>!r.paid);
+
+    if(type==='overdue') return open.filter(r=>daysFromToday(r.dueDate)<0);
+    if(type==='dueNow' || type==='week') return open.filter(r=>{
       const d=daysFromToday(r.dueDate);
       return d>=0 && d<=7;
     });
+    if(type==='future') return open.filter(r=>daysFromToday(r.dueDate)>7);
+    return [];
+  }
+
+  function summaryTitle(type){
+    const labels={
+      dueNow:'Da pagare ora',
+      overdue:'Scaduti',
+      future:'Scadenze future',
+      week:'In scadenza 7 giorni',
+      paid:'Pagati'
+    };
+    return `${labels[type] || 'Dettaglio'} — ${scopeLabel(state.scope)}`;
+  }
+
+  function openSummaryDetail(type){
+    const records=summaryRecords(type).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
+    els.summaryDetailTitle.textContent=summaryTitle(type);
+    els.summaryDetailContent.innerHTML='';
+
+    if(!records.length){
+      const empty=document.createElement('div');
+      empty.className='empty';
+      empty.textContent='Nessun pagamento in questa categoria.';
+      els.summaryDetailContent.appendChild(empty);
+    }else{
+      records.forEach(r=>{
+        const row=document.createElement('div');
+        row.className='summary-detail-row';
+        row.tabIndex=0;
+        row.setAttribute('role','button');
+        row.setAttribute('aria-label',`Modifica ${r.title}`);
+
+        const date=document.createElement('span');
+        date.textContent=formatDate(r.dueDate);
+
+        const title=document.createElement('span');
+        const extra = r.scope==='work' || r.scope==='clients'
+          ? (r.clientName ? ` — ${r.clientName}` : '')
+          : (r.country ? ` — ${r.country}` : '');
+        title.textContent=r.title + extra;
+
+        const amount=document.createElement('span');
+        amount.className='amt';
+        amount.textContent=money(r.amount);
+
+        const status=document.createElement('span');
+        status.className=`status ${recordStatus(r)}`;
+        status.textContent=statusLabel(r).label;
+
+        const edit=()=>{
+          state.scope=r.scope;
+          renderScope();
+          startEdit(r.id);
+        };
+        row.addEventListener('click',edit);
+        row.addEventListener('keydown',(e)=>{
+          if(e.key==='Enter' || e.key===' '){
+            e.preventDefault();
+            edit();
+          }
+        });
+
+        row.append(date,title,amount,status);
+        els.summaryDetailContent.appendChild(row);
+      });
+    }
+
+    els.summaryDetail.classList.remove('hidden');
+    els.summaryDetail.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+
+  function renderSummary(){
+    const records = getScopeRecords();
+    const open = records.filter(r=>!r.paid);
     const overdue = open.filter(r=>daysFromToday(r.dueDate)<0);
-    const future = open.filter(r=>daysFromToday(r.dueDate)>7);
-    const week = dueNow;
+    const week = open.filter(r=> {
+      const d=daysFromToday(r.dueDate); return d>=0 && d<=7;
+    });
     const paid = records.filter(r=>r.paid);
 
     const sum = arr => arr.reduce((a,r)=>a+r.amount,0);
-
-    els.dueTotal.textContent = money(sum(dueNow));
-    els.dueCount.textContent = `${dueNow.length} ${dueNow.length===1?'pagamento':'pagamenti'} entro 7 giorni`;
-
+    els.dueTotal.textContent = money(sum(open));
     els.overdueTotal.textContent = money(sum(overdue));
     els.overdueCount.textContent = `${overdue.length} ${overdue.length===1?'pagamento':'pagamenti'}`;
-
-    els.futureTotal.textContent = money(sum(future));
-    els.futureCount.textContent = `${future.length} ${future.length===1?'scadenza':'scadenze'} oltre 7 giorni`;
-
     els.weekTotal.textContent = money(sum(week));
     els.weekCount.textContent = `${week.length} ${week.length===1?'pagamento':'pagamenti'}`;
-
     els.paidTotal.textContent = money(sum(paid));
   }
 
@@ -595,16 +582,6 @@
       const st = statusLabel(r);
       const item = document.createElement('article');
       item.className = `item ${st.cls} ${r.paid?'paid':''}`;
-      item.tabIndex = 0;
-      item.setAttribute('role','button');
-      item.setAttribute('aria-label',`Modifica scadenza ${r.title}`);
-      item.addEventListener('click',()=>startEdit(r.id));
-      item.addEventListener('keydown',(e)=>{
-        if(e.key==='Enter' || e.key===' '){
-          e.preventDefault();
-          startEdit(r.id);
-        }
-      });
       const main = document.createElement('div');
       main.className='item-main';
 
@@ -617,8 +594,8 @@
 
       const parts = [
         `Scadenza: ${formatDate(r.dueDate)}`,
-        (r.scope === 'italy' || r.scope === 'england') && r.country ? `Paese: ${r.country}` : '',
-        (r.scope === 'work' || r.scope === 'clients') && r.clientName ? `Cliente: ${r.clientName}` : '',
+        r.scope === 'personal' && r.country ? `Paese: ${r.country}` : '',
+        r.scope !== 'personal' && r.clientName ? `Cliente: ${r.clientName}` : '',
         r.method ? `Metodo: ${r.method}` : '',
         r.recurrence && r.recurrence!=='none' ? `Ricorrenza: ${recurrenceLabel(r.recurrence)}` : ''
       ].filter(Boolean);
@@ -655,21 +632,21 @@
       const paidBtn = document.createElement('button');
       paidBtn.className='mini';
       paidBtn.textContent = r.paid ? 'Segna non pagato' : 'Segna pagato';
-      paidBtn.addEventListener('click',(e)=>{e.stopPropagation();togglePaid(r.id);});
+      paidBtn.addEventListener('click',()=>togglePaid(r.id));
 
       const editBtn = document.createElement('button');
       editBtn.className='mini';
       editBtn.textContent='Modifica';
-      editBtn.addEventListener('click',(e)=>{e.stopPropagation();startEdit(r.id);});
+      editBtn.addEventListener('click',()=>startEdit(r.id));
 
       const delBtn = document.createElement('button');
       delBtn.className='mini';
       delBtn.textContent='Elimina';
-      delBtn.addEventListener('click',(e)=>{e.stopPropagation();confirmAction(
+      delBtn.addEventListener('click',()=>confirmAction(
         'Elimina scadenza',
         `Eliminare "${r.title}"?`,
         ()=>deleteRecord(r.id)
-      );});
+      ));
 
       actions.append(paidBtn,editBtn,delBtn);
       side.append(amount,actions);
@@ -734,128 +711,29 @@
   }
 
   function renderAlerts(){
-    const scopes = [
-      {key:'italy', label:'Italia'},
-      {key:'england', label:'Inghilterra'},
-      {key:'work', label:'Lavoro'},
-      {key:'clients', label:'Clienti'}
-    ];
-
+    const records=getScopeRecords().filter(r=>!r.paid);
+    const upcoming=records.filter(r=>{const d=daysFromToday(r.dueDate);return d>=0 && d<=7;})
+      .sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
     els.alerts.innerHTML='';
-
-    scopes.forEach(scopeInfo=>{
-      const upcoming = state.records
-        .filter(r=>r.scope===scopeInfo.key && !r.paid)
-        .filter(r=>{const d=daysFromToday(r.dueDate);return d>=0 && d<=7;})
-        .sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
-
-      const box=document.createElement('div');
-      box.className=`alert-box ${scopeInfo.key}`;
-      box.tabIndex=0;
-      box.setAttribute('role','button');
-      box.setAttribute('aria-expanded','false');
-      box.setAttribute('aria-label',`Apri scadenze in avviso ${scopeInfo.label}`);
-
-      const head=document.createElement('div');
-      head.className='alert-head';
-      const strong=document.createElement('strong');
-      strong.textContent=scopeInfo.label;
-      const count=document.createElement('span');
-      count.className=`alert-count ${upcoming.length>0?'has-alerts':'no-alerts'}`;
-      count.textContent=`${upcoming.length} ${upcoming.length===1?'avviso':'avvisi'}`;
-      head.append(strong,count);
-      box.appendChild(head);
-
-      if(upcoming.length){
-        const ul=document.createElement('ul');
-        ul.className='alert-list';
-        upcoming.slice(0,3).forEach(r=>{
-          const li=document.createElement('li');
-          li.tabIndex=0;
-          li.setAttribute('role','button');
-          li.setAttribute('aria-label',`Modifica scadenza ${r.title}`);
-          li.textContent=`${formatDate(r.dueDate)} — ${r.title} — ${money(r.amount)}`;
-          const editAlert=()=>{
-            state.scope=r.scope;
-            renderScope();
-            startEdit(r.id);
-          };
-          li.addEventListener('click',(e)=>{
-            e.stopPropagation();
-            editAlert();
-          });
-          li.addEventListener('keydown',(e)=>{
-            if(e.key==='Enter' || e.key===' '){
-              e.preventDefault();
-              e.stopPropagation();
-              editAlert();
-            }
-          });
-          ul.appendChild(li);
-        });
-        if(upcoming.length>3){
-          const li=document.createElement('li');
-          li.textContent=`+ altre ${upcoming.length-3}`;
-          ul.appendChild(li);
-        }
-        box.appendChild(ul);
-      }else{
-        const empty=document.createElement('div');
-        empty.className='alert-empty';
-        empty.textContent='Nessuna scadenza entro 7 giorni.';
-        box.appendChild(empty);
-      }
-
-      const detail=document.createElement('div');
-      detail.className=`alert-detail ${scopeInfo.key}`;
-      detail.id=`alert-detail-${scopeInfo.key}`;
-
-      const title=document.createElement('strong');
-      title.textContent=`${scopeInfo.label} — Scadenze entro 7 giorni`;
-      detail.appendChild(title);
-
-      if(upcoming.length){
-        upcoming.forEach(r=>{
-          const row=document.createElement('div');
-          row.className='alert-detail-row';
-          row.tabIndex=0;
-          row.setAttribute('role','button');
-          row.setAttribute('aria-label',`Modifica ${r.title}`);
-          const date=document.createElement('span');
-          date.textContent=formatDate(r.dueDate);
-          const name=document.createElement('span');
-          name.textContent=r.title;
-          const amount=document.createElement('span');
-          amount.className='alert-detail-amount';
-          amount.textContent=money(r.amount);
-          const edit=()=>{ state.scope=r.scope; renderScope(); startEdit(r.id); };
-          row.addEventListener('click',(e)=>{e.stopPropagation();edit();});
-          row.addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();edit();}});
-          row.append(date,name,amount);
-          detail.appendChild(row);
-        });
-      }else{
-        const empty=document.createElement('div');
-        empty.className='alert-empty';
-        empty.textContent='Non ci sono scadenze da mostrare.';
-        detail.appendChild(empty);
-      }
-
-      const toggle=()=>{
-        const wasOpen=detail.classList.contains('open');
-        document.querySelectorAll('.alert-detail.open').forEach(x=>x.classList.remove('open'));
-        document.querySelectorAll('.alert-box[aria-expanded="true"]').forEach(x=>x.setAttribute('aria-expanded','false'));
-        if(!wasOpen){
-          detail.classList.add('open');
-          box.setAttribute('aria-expanded','true');
-          detail.scrollIntoView({behavior:'smooth',block:'nearest'});
-        }
-      };
-      box.addEventListener('click',toggle);
-      box.addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
-
-      els.alerts.append(box,detail);
+    if(!upcoming.length) return;
+    const box=document.createElement('div');
+    box.className='alert-box';
+    const strong=document.createElement('strong');
+    strong.textContent=`Avviso: ${upcoming.length} ${upcoming.length===1?'scadenza':'scadenze'} entro 7 giorni`;
+    const ul=document.createElement('ul');
+    ul.className='alert-list';
+    upcoming.slice(0,8).forEach(r=>{
+      const li=document.createElement('li');
+      li.textContent=`${formatDate(r.dueDate)} — ${r.title} — ${money(r.amount)}`;
+      ul.appendChild(li);
     });
+    if(upcoming.length>8){
+      const li=document.createElement('li');
+      li.textContent=`+ altre ${upcoming.length-8}`;
+      ul.appendChild(li);
+    }
+    box.append(strong,ul);
+    els.alerts.appendChild(box);
   }
 
   function escapeCsvCell(v){
@@ -868,7 +746,7 @@
   function downloadReport(){
     const headers=['Sezione','Pagamento','Importo','Scadenza','Stato','Cliente','Paese','Metodo','Ricorrenza','Note'];
     const rows=state.records.slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).map(r=>[
-      r.scope==='italy'?'Italia':r.scope==='england'?'Inghilterra':r.scope==='work'?'Lavoro':'Clienti',
+      r.scope==='personal'?'Personale':r.scope==='work'?'Lavoro':'Clienti',
       r.title,
       r.amount.toFixed(2),
       r.dueDate,
@@ -890,18 +768,11 @@
   }
 
   function updateScopeFields(){
-    const isCountrySection = state.scope === 'italy' || state.scope === 'england';
-    els.countryField.classList.add('hidden');
-    els.clientField.classList.toggle('hidden', isCountrySection);
-    els.clientManager.classList.toggle('hidden', isCountrySection);
-
-    if(state.scope==='italy'){
-      els.country.value='Italia';
-      els.clientName.value='';
-    }else if(state.scope==='england'){
-      els.country.value='Inghilterra';
-      els.clientName.value='';
-    }
+    const personal = state.scope === 'personal';
+    els.countryField.classList.toggle('hidden', !personal);
+    els.clientField.classList.toggle('hidden', personal);
+    els.clientManager.classList.toggle('hidden', personal);
+    if(personal) els.clientName.value='';
     renderClients();
   }
 
@@ -916,7 +787,7 @@
       els.clientSuggestions.appendChild(option);
 
       const chip=document.createElement('span');
-      chip.className=`badge ${state.scope==='clients'?'clients':'work'}`;
+      chip.className='badge work';
       chip.style.display='inline-flex';
       chip.style.gap='7px';
       chip.style.alignItems='center';
@@ -950,30 +821,19 @@
   function renderScope(){
     document.querySelectorAll('.tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.scope===state.scope));
     const scopeLabels = {
-      italy: 'Italia',
-      england: 'Inghilterra',
+      personal: 'Personale',
       work: 'Lavoro',
       clients: 'Clienti'
     };
-    document.body.classList.remove('scope-italy','scope-england','scope-work','scope-clients','scope-personal');
-    document.body.classList.add(`scope-${state.scope}`);
-    els.scopeBadge.textContent = scopeLabels[state.scope] || 'Italia';
-    els.scopeBadge.className = 'badge';
-    if(state.scope==='italy'){
-      els.scopeBadge.style.background='var(--italy-bg)';
-      els.scopeBadge.style.color='var(--italy-border)';
-    }else if(state.scope==='england'){
-      els.scopeBadge.style.background='var(--england-bg)';
-      els.scopeBadge.style.color='var(--england-border)';
-    }else{
-      els.scopeBadge.style.background='';
-      els.scopeBadge.style.color='';
-      els.scopeBadge.classList.add(state.scope);
-    }
+    els.scopeBadge.textContent = scopeLabels[state.scope] || 'Personale';
+    els.scopeBadge.className = `badge ${state.scope}`;
     updateScopeFields();
     renderSummary();
     renderAlerts();
     renderList();
+    if(els.summaryDetail && !els.summaryDetail.classList.contains('hidden')){
+      els.summaryDetail.classList.add('hidden');
+    }
   }
 
   function resetForm(){
@@ -983,21 +843,14 @@
     els.saveBtn.textContent='Salva scadenza';
     els.cancelEditBtn.classList.add('hidden');
     els.dueDate.value=todayISO();
+    els.country.value='Italia';
     els.recurrence.value='none';
-
-    if(state.scope==='italy') els.country.value='Italia';
-    else if(state.scope==='england') els.country.value='Inghilterra';
-
     updateScopeFields();
   }
 
   function startEdit(id){
     const r=state.records.find(x=>x.id===id);
     if(!r) return;
-    if(state.scope !== r.scope){
-      state.scope = r.scope;
-      renderScope();
-    }
     els.recordId.value=r.id;
     els.title.value=r.title;
     els.amount.value=r.amount;
@@ -1029,8 +882,8 @@
     const candidate = normalizeRecord({
       id:id||uid(), scope:state.scope, title:els.title.value, amount:els.amount.value,
       dueDate:els.dueDate.value,
-      clientName: (state.scope==='italy' || state.scope==='england') ? '' : els.clientName.value,
-      country: state.scope==='italy' ? 'Italia' : state.scope==='england' ? 'Inghilterra' : '',
+      clientName: state.scope==='personal' ? '' : els.clientName.value,
+      country: state.scope==='personal' ? els.country.value : '',
       method:els.method.value, recurrence:els.recurrence.value, notes:els.notes.value,
       paid:false
     });
@@ -1143,7 +996,6 @@
     state.scope=btn.dataset.scope;
     resetForm();
     renderScope();
-    window.scrollTo({top:0,behavior:'smooth'});
   }));
 
   els.form.addEventListener('submit',onSubmit);
@@ -1156,16 +1008,6 @@
   els.monthFilter.addEventListener('change',()=>{state.filters.month=els.monthFilter.value;renderList();});
   els.sortBy.addEventListener('change',()=>{state.filters.sort=els.sortBy.value;renderList();});
 
-  els.newRecurrenceBtn.addEventListener('click',()=>{
-    resetForm();
-    els.recurrence.value='monthly';
-    els.formTitle.textContent=`Nuova ricorrenza — ${state.scope==='italy'?'Italia':state.scope==='england'?'Inghilterra':state.scope==='work'?'Lavoro':'Clienti'}`;
-    els.saveBtn.textContent='Salva ricorrenza';
-    requestAnimationFrame(()=>{
-      els.title.focus();
-      els.form.scrollIntoView({behavior:'smooth',block:'start'});
-    });
-  });
   els.themeBtn.addEventListener('click',toggleTheme);
   els.reportBtn.addEventListener('click',downloadReport);
   els.exportBtn.addEventListener('click',exportBackup);
