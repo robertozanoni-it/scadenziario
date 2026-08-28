@@ -310,11 +310,16 @@
             <option value="">Non specificato</option>
             <option>Bonifico</option>
             <option>Carta</option>
+            <option>PayPal</option>
             <option>Addebito automatico</option>
             <option>F24</option>
             <option>Contanti</option>
             <option>Altro</option>
           </select>
+          <div id="customMethodField" class="hidden" style="margin-top:8px">
+            <label for="customMethod">Personalizza “Altro”</label>
+            <input id="customMethod" maxlength="80" placeholder="Es. Revolut, assegno, bollettino..." />
+          </div>
         </div>
         <div class="field">
           <label for="recurrence">Ricorrenza</label>
@@ -394,7 +399,7 @@
     dueDate:$('dueDate'), clientName:$('clientName'), country:$('country'),
     clientField:$('clientField'), countryField:$('countryField'), clientManager:$('clientManager'),
     clientSuggestions:$('clientSuggestions'), newClient:$('newClient'), addClientBtn:$('addClientBtn'),
-    clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'),
+    clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'), customMethod:$('customMethod'), customMethodField:$('customMethodField'),
     recurrence:$('recurrence'), notes:$('notes'),
     list:$('list'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
     cancelEditBtn:$('cancelEditBtn'), search:$('search'), statusFilter:$('statusFilter'),
@@ -547,6 +552,16 @@
     if(days===1) return {label:'Scade domani', cls:'upcoming'};
     return {label:`Tra ${days} giorni`, cls:'upcoming'};
   }
+
+  const STANDARD_METHODS = ['', 'Bonifico', 'Carta', 'PayPal', 'Addebito automatico', 'F24', 'Contanti'];
+  function updateCustomMethodField(){ const other=els.method.value==='Altro'; els.customMethodField.classList.toggle('hidden',!other); if(!other) els.customMethod.value=''; }
+  function setMethodFields(value){
+    value=String(value||'').trim();
+    if(STANDARD_METHODS.includes(value)){ els.method.value=value; els.customMethod.value=''; els.customMethodField.classList.add('hidden'); }
+    else if(value){ els.method.value='Altro'; els.customMethod.value=value; els.customMethodField.classList.remove('hidden'); }
+    else { els.method.value=''; els.customMethod.value=''; els.customMethodField.classList.add('hidden'); }
+  }
+  function getMethodValue(){ return els.method.value==='Altro' ? els.customMethod.value.trim().slice(0,80) : els.method.value; }
 
   function renderSummary(){
     const records = getScopeRecords();
@@ -984,6 +999,7 @@
     els.cancelEditBtn.classList.add('hidden');
     els.dueDate.value=todayISO();
     els.recurrence.value='none';
+    setMethodFields('');
 
     if(state.scope==='italy') els.country.value='Italia';
     else if(state.scope==='england') els.country.value='Inghilterra';
@@ -1004,7 +1020,7 @@
     els.dueDate.value=r.dueDate;
     els.clientName.value=r.clientName || '';
     els.country.value=r.country || 'Italia';
-    els.method.value=r.method;
+    setMethodFields(r.method);
     els.recurrence.value=r.recurrence || 'none';
     els.notes.value=r.notes;
     els.formTitle.textContent='Modifica scadenza';
@@ -1026,12 +1042,14 @@
   function onSubmit(e){
     e.preventDefault();
     const id=els.recordId.value;
+    const methodValue=getMethodValue();
+    if(els.method.value==='Altro' && !methodValue){ showToast('Inserisci il metodo di pagamento personalizzato.'); els.customMethod.focus(); return; }
     const candidate = normalizeRecord({
       id:id||uid(), scope:state.scope, title:els.title.value, amount:els.amount.value,
       dueDate:els.dueDate.value,
       clientName: (state.scope==='italy' || state.scope==='england') ? '' : els.clientName.value,
       country: state.scope==='italy' ? 'Italia' : state.scope==='england' ? 'Inghilterra' : '',
-      method:els.method.value, recurrence:els.recurrence.value, notes:els.notes.value,
+      method:methodValue, recurrence:els.recurrence.value, notes:els.notes.value,
       paid:false
     });
     if(!candidate){
@@ -1147,6 +1165,7 @@
   }));
 
   els.form.addEventListener('submit',onSubmit);
+  els.method.addEventListener('change',updateCustomMethodField);
   els.addClientBtn.addEventListener('click',addClient);
   els.newClient.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addClient();}});
   els.cancelEditBtn.addEventListener('click',resetForm);
