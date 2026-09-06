@@ -69,8 +69,6 @@
     .filters{display:grid;grid-template-columns:minmax(260px,2fr) repeat(4,minmax(140px,1fr));gap:10px;margin-bottom:18px}
     .smart-search-wrap{position:relative}
     .smart-search-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
-    .smart-search-hint{font-size:12px;color:var(--muted);margin-top:5px}
-    .smart-search-status{font-size:12px;color:var(--muted);margin-top:6px;min-height:18px}
     .search-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
     .search-chip{border:1px solid var(--line);background:transparent;color:var(--text);padding:5px 8px;border-radius:999px;font-size:12px}
     .search-chip:hover{background:rgba(127,127,127,.08)}
@@ -265,13 +263,11 @@
 
   <section class="filters card global-search-card">
     <div class="field smart-search-wrap">
-      <label for="search">Ricerca intelligente globale · Tutte le categorie</label>
+      <label for="search">Ricerca intelligente globale</label>
       <div class="smart-search-box">
         <input id="search" placeholder="Es. clienti scaduti oltre 500 euro, Italia entro 30 giorni, Rossi bonifico..." autocomplete="off" />
         <button type="button" class="btn" id="clearSearchBtn">Pulisci</button>
       </div>
-      <div class="smart-search-hint">Ricerca globale su tutte le categorie. Se la parola compare nel titolo/pagamento mostra solo quei risultati; altrimenti cerca anche in cliente, metodo, note, importo, data e altri campi. Categoria, mese e stato restringono ulteriormente.</div>
-      <div class="smart-search-status" id="smartSearchStatus" aria-live="polite"></div>
       <div class="search-chips" aria-label="Esempi ricerca">
         <button type="button" class="search-chip" data-smart-query="scaduti">Scaduti</button>
         <button type="button" class="search-chip" data-smart-query="entro 7 giorni">Entro 7 giorni</button>
@@ -446,7 +442,7 @@
     clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'), customMethod:$('customMethod'), customMethodField:$('customMethodField'),
     recurrence:$('recurrence'), notes:$('notes'),
     list:$('list'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
-    cancelEditBtn:$('cancelEditBtn'), search:$('search'), clearSearchBtn:$('clearSearchBtn'), smartSearchStatus:$('smartSearchStatus'), categoryFilter:$('categoryFilter'), statusFilter:$('statusFilter'),
+    cancelEditBtn:$('cancelEditBtn'), search:$('search'), clearSearchBtn:$('clearSearchBtn'), categoryFilter:$('categoryFilter'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
     weekCount:$('weekCount'), paidTotal:$('paidTotal'), dueCount:$('dueCount'),
@@ -682,34 +678,8 @@
 
   function getSearchBaseRecords(){
     const smart=parseSmartSearch(state.filters.search);
-
-    // La ricerca è globale per impostazione predefinita.
-    // Viene limitata solo quando l'utente specifica esplicitamente una categoria
-    // nella query oppure quando applica filtri strutturati (mese/stato).
     if(smart.scope) return state.records.filter(r=>r.scope===smart.scope);
-
-    const hasStructuredFilter =
-      state.filters.status !== 'all' ||
-      Boolean(state.filters.month);
-
-    // Se c'è una ricerca testuale o nessun filtro strutturato, si parte da TUTTI i record.
-    if(state.filters.search.trim() || !hasStructuredFilter) return state.records.slice();
-
-    // Se l'utente usa solo filtri strutturati senza testo, si applicano globalmente.
     return state.records.slice();
-  }
-
-  function getPreferredSearchMode(records, smart){
-    if(!state.filters.search.trim() || !smart.text.length) return 'all-fields';
-
-    // Se almeno un titolo contiene tutti i termini testuali, limita i risultati ai titoli.
-    // Evita che "car" mostri record trovati solo per "Carta" nel metodo o per note secondarie.
-    const hasTitleMatches = records.some(r=>{
-      const title=normalizeSearchText(r.title);
-      return smart.text.every(term=>title.includes(term));
-    });
-
-    return hasTitleMatches ? 'title-first' : 'all-fields';
   }
 
   function filterRecords(records){
@@ -744,19 +714,9 @@
 
       if(smart.text.length){
         const title=normalizeSearchText(r.title);
-
-        if(searchMode==='title-first'){
-          // Quando esistono corrispondenze nel titolo, mostra SOLO quelle.
-          if(!smart.text.every(term=>title.includes(term))) return false;
-        }else{
-          // Se nessun titolo corrisponde, estende la ricerca a tutti gli altri campi.
-          const words = haystack.split(/[^a-z0-9]+/).filter(Boolean);
-          const matchesAll = smart.text.every(term=>{
-            if(haystack.includes(term)) return true;
-            return words.some(word => word.startsWith(term) || word.includes(term));
-          });
-          if(!matchesAll) return false;
-        }
+        // Ricerca testuale principale: mostra SOLO le scadenze
+        // il cui titolo/pagamento contiene tutti i termini digitati.
+        if(!smart.text.every(term => title.includes(term))) return false;
       }
 
       const st = recordStatus(r);
@@ -857,25 +817,8 @@
     const hasStatus=state.filters.status!=='all';
     const isGlobal=!hasCategory && !hasMonth && !hasStatus;
 
-    els.recordCount.textContent = `${records.length} ${records.length===1?'elemento':'elementi'}${isGlobal?' · tutte le categorie':' · filtrati'}`;
+    els.recordCount.textContent = `${records.length} ${records.length===1?'elemento':'elementi'}${hasQuery?' · risultati ricerca':isGlobal?' · tutte le categorie':' · filtrati'}`;
 
-    if(els.smartSearchStatus){
-      const smart=parseSmartSearch(state.filters.search);
-      const parts=describeSmartSearch(smart);
-      if(hasQuery){
-        const mode=getPreferredSearchMode(base, smart);
-        const prefix = mode==='title-first'
-          ? 'Corrispondenze nel titolo'
-          : 'Ricerca estesa a tutti i campi';
-        els.smartSearchStatus.textContent = parts.length
-          ? `${prefix}: ${parts.join(' · ')}`
-          : `${prefix}.`;
-      }else if(isGlobal){
-        els.smartSearchStatus.textContent = 'Vista globale: tutte le categorie. Seleziona categoria, mese o stato per restringere.';
-      }else{
-        els.smartSearchStatus.textContent = 'Filtri attivi: vengono mostrati solo i risultati corrispondenti.';
-      }
-    }
     els.list.innerHTML = '';
     if(!records.length){
       const div = document.createElement('div');
