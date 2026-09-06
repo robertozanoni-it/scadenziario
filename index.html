@@ -257,7 +257,7 @@
         <input id="search" placeholder="Es. clienti scaduti oltre 500 euro, Italia entro 30 giorni, Rossi bonifico..." autocomplete="off" />
         <button type="button" class="btn" id="clearSearchBtn">Pulisci</button>
       </div>
-      <div class="smart-search-hint">Puoi combinare sezione, stato, importo, periodo, cliente, metodo e ricorrenza in una sola frase.</div>
+      <div class="smart-search-hint">Cerca in tutto ciò che hai inserito nella scadenza: titolo, cliente, metodo, note, importo, data, stato, ricorrenza e sezione. Funzionano anche parole parziali: “car” trova carta, carburante, car insurance, ecc.</div>
       <div class="smart-search-status" id="smartSearchStatus" aria-live="polite"></div>
       <div class="search-chips" aria-label="Esempi ricerca">
         <button type="button" class="search-chip" data-smart-query="scaduti">Scaduti</button>
@@ -671,12 +671,41 @@
 
     const smart = parseSmartSearch(state.filters.search);
     let out = records.filter(r=>{
-      const haystack=normalizeSearchText([
-        r.title,r.clientName,r.country,r.method,r.notes,
-        recurrenceLabel(r.recurrence),formatDate(r.dueDate),r.dueDate
-      ].join(' '));
+      // Indicizza globalmente ogni valore significativo inserito o derivato dalla scadenza.
+      // Restano esclusi solo gli identificativi tecnici e i timestamp interni.
+      const searchableRecord = {
+        titolo:r.title,
+        cliente:r.clientName,
+        paese:r.country,
+        metodo:r.method,
+        note:r.notes,
+        ricorrenza:recurrenceLabel(r.recurrence),
+        ricorrenzaCodice:r.recurrence,
+        scadenza:r.dueDate,
+        scadenzaFormattata:formatDate(r.dueDate),
+        importo:String(r.amount),
+        importoFormattato:money(r.amount),
+        stato:recordStatus(r),
+        statoEtichetta:statusLabel(r).label,
+        sezione:r.scope==='italy'?'Italia':r.scope==='england'?'Inghilterra':r.scope==='work'?'Lavoro':'Clienti',
+        pagato:r.paid?'pagato saldato sì':'non pagato aperto no'
+      };
 
-      if(smart.text.length && !smart.text.every(term=>haystack.includes(term))) return false;
+      const haystack=normalizeSearchText(
+        Object.entries(searchableRecord)
+          .flatMap(([key,value]) => [key, value])
+          .join(' ')
+      );
+
+      if(smart.text.length){
+        const words = haystack.split(/[^a-z0-9]+/).filter(Boolean);
+        const matchesAll = smart.text.every(term=>{
+          if(haystack.includes(term)) return true;
+          // Ricerca per prefisso/frammento: "car" trova "carta", "carburante", "car insurance", ecc.
+          return words.some(word => word.startsWith(term) || word.includes(term));
+        });
+        if(!matchesAll) return false;
+      }
 
       const st = recordStatus(r);
       if(smart.status==='open' && r.paid) return false;
