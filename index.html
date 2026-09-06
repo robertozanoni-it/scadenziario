@@ -124,17 +124,29 @@
       body.scope-england .global-search-card,
       body.scope-work .global-search-card,
       body.scope-clients .global-search-card{background:var(--panel);border-color:var(--line)}
+      .item.search-match.scope-italy{background:var(--italy-bg);border-color:var(--italy-border)}
+      .item.search-match.scope-england{background:var(--england-bg);border-color:var(--england-border)}
+      .item.search-match.scope-work{background:var(--work-bg);border-color:var(--work-border)}
+      .item.search-match.scope-clients{background:var(--clients-bg);border-color:var(--clients-border)}
     }
 
     .list{display:grid;gap:10px}
     .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
     .item:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+    .item.search-match.scope-italy{background:color-mix(in srgb, var(--italy-bg) 82%, var(--panel));border-color:var(--italy-border)}
+    .item.search-match.scope-england{background:color-mix(in srgb, var(--england-bg) 82%, var(--panel));border-color:var(--england-border)}
+    .item.search-match.scope-work{background:color-mix(in srgb, var(--work-bg) 82%, var(--panel));border-color:var(--work-border)}
+    .item.search-match.scope-clients{background:color-mix(in srgb, var(--clients-bg) 82%, var(--panel));border-color:var(--clients-border)}
     .item:focus{outline:2px solid var(--text);outline-offset:2px}
     .item.overdue{border-left:5px solid var(--danger)}
     .item.today{border-left:5px solid var(--warn)}
     .item.paid{opacity:.62}
     .item-main{min-width:0}
     .item-title{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .item.search-match.scope-italy .item-title{color:var(--italy-border)}
+    .item.search-match.scope-england .item-title{color:var(--england-border)}
+    .item.search-match.scope-work .item-title{color:var(--work-border)}
+    .item.search-match.scope-clients .item-title{color:var(--clients-border)}
     .item-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:13px;color:var(--muted)}
     .amount{font-size:18px;font-weight:900;text-align:right}
     .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
@@ -830,7 +842,8 @@
     for(const r of records){
       const st = statusLabel(r);
       const item = document.createElement('article');
-      item.className = `item ${st.cls} ${r.paid?'paid':''}`;
+      const hasSearchQuery = Boolean(state.filters.search.trim());
+      item.className = `item ${st.cls} ${r.paid?'paid':''} ${hasSearchQuery?'search-match':''} scope-${r.scope}`;
       item.tabIndex = 0;
       item.setAttribute('role','button');
       item.setAttribute('aria-label',`Modifica scadenza ${r.title}`);
