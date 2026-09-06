@@ -66,7 +66,7 @@
     .metric-label{font-size:13px;color:var(--muted);margin-bottom:6px}
     .metric-value{font-weight:800;font-size:26px}
     .metric-note{font-size:12px;color:var(--muted);margin-top:4px}
-    .filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+    .filters{display:grid;grid-template-columns:minmax(260px,2fr) repeat(4,minmax(140px,1fr));gap:10px;margin-bottom:18px}
     .smart-search-wrap{position:relative}
     .smart-search-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
     .smart-search-hint{font-size:12px;color:var(--muted);margin-top:5px}
@@ -257,7 +257,7 @@
         <input id="search" placeholder="Es. clienti scaduti oltre 500 euro, Italia entro 30 giorni, Rossi bonifico..." autocomplete="off" />
         <button type="button" class="btn" id="clearSearchBtn">Pulisci</button>
       </div>
-      <div class="smart-search-hint">Cerca in tutto ciò che hai inserito nella scadenza: titolo, cliente, metodo, note, importo, data, stato, ricorrenza e sezione. Funzionano anche parole parziali: “car” trova carta, carburante, car insurance, ecc.</div>
+      <div class="smart-search-hint">Ricerca globale su tutte le categorie. Mostra solo i risultati che corrispondono alla parola o frase inserita. Categoria, mese e stato restringono ulteriormente la ricerca.</div>
       <div class="smart-search-status" id="smartSearchStatus" aria-live="polite"></div>
       <div class="search-chips" aria-label="Esempi ricerca">
         <button type="button" class="search-chip" data-smart-query="scaduti">Scaduti</button>
@@ -265,6 +265,16 @@
         <button type="button" class="search-chip" data-smart-query="oltre 500 euro">Oltre €500</button>
         <button type="button" class="search-chip" data-smart-query="clienti non pagati">Clienti da pagare</button>
       </div>
+    </div>
+    <div class="field">
+      <label for="categoryFilter">Categoria</label>
+      <select id="categoryFilter">
+        <option value="all">Tutte le categorie</option>
+        <option value="italy">Italia</option>
+        <option value="england">Inghilterra</option>
+        <option value="work">Lavoro</option>
+        <option value="clients">Clienti</option>
+      </select>
     </div>
     <div class="field">
       <label for="statusFilter">Stato</label>
@@ -409,7 +419,7 @@
     scope: 'italy',
     records: [],
     clients: [],
-    filters: { search:'', status:'all', month:'', sort:'dateAsc' },
+    filters: { search:'', status:'all', month:'', sort:'dateAsc', category:'all' },
     settings: { theme:'system' },
     pendingConfirm: null
   };
@@ -423,7 +433,7 @@
     clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'), customMethod:$('customMethod'), customMethodField:$('customMethodField'),
     recurrence:$('recurrence'), notes:$('notes'),
     list:$('list'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
-    cancelEditBtn:$('cancelEditBtn'), search:$('search'), clearSearchBtn:$('clearSearchBtn'), smartSearchStatus:$('smartSearchStatus'), statusFilter:$('statusFilter'),
+    cancelEditBtn:$('cancelEditBtn'), search:$('search'), clearSearchBtn:$('clearSearchBtn'), smartSearchStatus:$('smartSearchStatus'), categoryFilter:$('categoryFilter'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
     weekCount:$('weekCount'), paidTotal:$('paidTotal'), dueCount:$('dueCount'),
@@ -659,12 +669,21 @@
 
   function getSearchBaseRecords(){
     const smart=parseSmartSearch(state.filters.search);
-    // Se l'utente indica esplicitamente una sezione nella query, cerca lì.
-    // Altrimenti, se esiste una query, cerca globalmente su tutte le sezioni.
-    // A ricerca vuota, resta il comportamento tradizionale della scheda attiva.
+
+    // La ricerca è globale per impostazione predefinita.
+    // Viene limitata solo quando l'utente specifica esplicitamente una categoria
+    // nella query oppure quando applica filtri strutturati (mese/stato).
     if(smart.scope) return state.records.filter(r=>r.scope===smart.scope);
-    if(state.filters.search.trim()) return state.records.slice();
-    return getScopeRecords();
+
+    const hasStructuredFilter =
+      state.filters.status !== 'all' ||
+      Boolean(state.filters.month);
+
+    // Se c'è una ricerca testuale o nessun filtro strutturato, si parte da TUTTI i record.
+    if(state.filters.search.trim() || !hasStructuredFilter) return state.records.slice();
+
+    // Se l'utente usa solo filtri strutturati senza testo, si applicano globalmente.
+    return state.records.slice();
   }
 
   function filterRecords(records){
@@ -725,6 +744,7 @@
       if(smart.month && r.dueDate.slice(5,7)!==smart.month) return false;
 
       // I filtri classici restano attivi e si combinano con la ricerca.
+      if(state.filters.category!=='all' && r.scope!==state.filters.category) return false;
       if(state.filters.status==='open' && r.paid) return false;
       if(state.filters.status==='overdue' && st!=='overdue') return false;
       if(state.filters.status==='today' && st!=='today') return false;
@@ -798,15 +818,26 @@
   function renderList(){
     const base=getSearchBaseRecords();
     const records = filterRecords(base);
-    const isGlobal=Boolean(state.filters.search.trim());
-    els.recordCount.textContent = `${records.length} ${records.length===1?'elemento':'elementi'}${isGlobal?' · ricerca globale':''}`;
+    const hasQuery=Boolean(state.filters.search.trim());
+    const hasCategory=state.filters.category!=='all';
+    const hasMonth=Boolean(state.filters.month);
+    const hasStatus=state.filters.status!=='all';
+    const isGlobal=!hasCategory && !hasMonth && !hasStatus;
+
+    els.recordCount.textContent = `${records.length} ${records.length===1?'elemento':'elementi'}${isGlobal?' · tutte le categorie':' · filtrati'}`;
 
     if(els.smartSearchStatus){
       const smart=parseSmartSearch(state.filters.search);
       const parts=describeSmartSearch(smart);
-      els.smartSearchStatus.textContent = state.filters.search.trim()
-        ? (parts.length ? `Interpretato come: ${parts.join(' · ')}` : 'Ricerca testuale globale')
-        : 'Nessuna ricerca attiva: vengono mostrate le scadenze della sezione selezionata.';
+      if(hasQuery){
+        els.smartSearchStatus.textContent = parts.length
+          ? `Risultati mostrati solo per: ${parts.join(' · ')}`
+          : 'Risultati mostrati solo per la ricerca inserita.';
+      }else if(isGlobal){
+        els.smartSearchStatus.textContent = 'Vista globale: tutte le categorie. Seleziona categoria, mese o stato per restringere.';
+      }else{
+        els.smartSearchStatus.textContent = 'Filtri attivi: vengono mostrati solo i risultati corrispondenti.';
+      }
     }
     els.list.innerHTML = '';
     if(!records.length){
@@ -1371,8 +1402,11 @@
 
   document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
     state.scope=btn.dataset.scope;
+    state.filters.category=btn.dataset.scope;
+    if(els.categoryFilter) els.categoryFilter.value=btn.dataset.scope;
     resetForm();
     renderScope();
+    renderList();
     window.scrollTo({top:0,behavior:'smooth'});
   }));
 
@@ -1384,6 +1418,10 @@
 
   els.search.addEventListener('input',()=>{
     state.filters.search=els.search.value;
+    renderList();
+  });
+  els.categoryFilter.addEventListener('change',()=>{
+    state.filters.category=els.categoryFilter.value;
     renderList();
   });
   els.search.addEventListener('keydown',e=>{
