@@ -10,6 +10,7 @@
       --bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;
       --primary:#111827;--primary-2:#374151;--danger:#b91c1c;--warn:#b45309;--ok:#047857;
       --work:#dbeafe;--work-text:#1d4ed8;--personal:#fce7f3;--personal-text:#be185d;--clients:#dcfce7;--clients-text:#15803d;
+      --personal-bg:#fce7f3;--personal-border:#f9a8d4;
       --italy-bg:#f3e8ff;--italy-border:#c084fc;
       --england-bg:#fff7ed;--england-border:#f59e0b;
       --work-bg:#dbeafe;--work-border:#60a5fa;
@@ -20,6 +21,7 @@
       --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
       --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
       --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;
+      --personal-bg:#500724;--personal-border:#be185d;
       --italy-bg:#241238;--italy-border:#7c3aed;
       --england-bg:#33220a;--england-border:#f59e0b;
       --work-bg:#0b2340;--work-border:#2563eb;
@@ -31,6 +33,7 @@
         --bg:#0f1115;--panel:#171a20;--text:#f3f4f6;--muted:#9ca3af;--line:#2b3038;
         --primary:#f9fafb;--primary-2:#d1d5db;--work:#172554;--work-text:#93c5fd;
         --personal:#500724;--personal-text:#f9a8d4;--clients:#052e16;--clients-text:#86efac;
+        --personal-bg:#500724;--personal-border:#be185d;
         --italy-bg:#241238;--italy-border:#7c3aed;
         --england-bg:#33220a;--england-border:#f59e0b;
         --work-bg:#0b2340;--work-border:#2563eb;
@@ -64,6 +67,13 @@
     .metric-value{font-weight:800;font-size:26px}
     .metric-note{font-size:12px;color:var(--muted);margin-top:4px}
     .filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+    .smart-search-wrap{position:relative}
+    .smart-search-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+    .smart-search-hint{font-size:12px;color:var(--muted);margin-top:5px}
+    .smart-search-status{font-size:12px;color:var(--muted);margin-top:6px;min-height:18px}
+    .search-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .search-chip{border:1px solid var(--line);background:transparent;color:var(--text);padding:5px 8px;border-radius:999px;font-size:12px}
+    .search-chip:hover{background:rgba(127,127,127,.08)}
     .field{display:flex;flex-direction:column;gap:6px}
     label{font-size:12px;font-weight:700;color:var(--muted)}
     input,select,textarea{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:11px 12px;border-radius:12px;outline:none}
@@ -177,7 +187,7 @@
     }
     @media(max-width:560px){
       .app{padding:14px}
-      .summary,.filters,.row2{grid-template-columns:1fr}
+      .summary,.filters,.row2,.smart-search-box{grid-template-columns:1fr}
       .item{grid-template-columns:1fr}
       .amount{text-align:left}
       .actions{justify-content:flex-start}
@@ -196,9 +206,9 @@
       <button class="btn primary" id="newRecurrenceBtn" type="button">+ Nuova ricorrenza</button>
       <button class="btn" id="themeBtn" type="button">Modalità dark</button>
       <button class="btn" id="reportBtn" type="button">Download report</button>
-      <button class="btn" id="exportBtn">Esporta backup</button>
-      <button class="btn" id="importBtn">Importa backup</button>
-      <button class="btn danger" id="resetBtn">Azzera tutto</button>
+      <button class="btn" id="exportBtn" type="button">Esporta backup</button>
+      <button class="btn" id="importBtn" type="button">Importa backup</button>
+      <button class="btn danger" id="resetBtn" type="button">Azzera tutto</button>
       <input type="file" id="importFile" accept="application/json,.json" class="hidden" />
     </div>
   </header>
@@ -241,9 +251,20 @@
   </section>
 
   <section class="filters card">
-    <div class="field">
-      <label for="search">Cerca</label>
-      <input id="search" placeholder="Es. affitto, IVA, assicurazione..." />
+    <div class="field smart-search-wrap">
+      <label for="search">Ricerca intelligente globale</label>
+      <div class="smart-search-box">
+        <input id="search" placeholder="Es. clienti scaduti oltre 500 euro, Italia entro 30 giorni, Rossi bonifico..." autocomplete="off" />
+        <button type="button" class="btn" id="clearSearchBtn">Pulisci</button>
+      </div>
+      <div class="smart-search-hint">Puoi combinare sezione, stato, importo, periodo, cliente, metodo e ricorrenza in una sola frase.</div>
+      <div class="smart-search-status" id="smartSearchStatus" aria-live="polite"></div>
+      <div class="search-chips" aria-label="Esempi ricerca">
+        <button type="button" class="search-chip" data-smart-query="scaduti">Scaduti</button>
+        <button type="button" class="search-chip" data-smart-query="entro 7 giorni">Entro 7 giorni</button>
+        <button type="button" class="search-chip" data-smart-query="oltre 500 euro">Oltre €500</button>
+        <button type="button" class="search-chip" data-smart-query="clienti non pagati">Clienti da pagare</button>
+      </div>
     </div>
     <div class="field">
       <label for="statusFilter">Stato</label>
@@ -402,7 +423,7 @@
     clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'), customMethod:$('customMethod'), customMethodField:$('customMethodField'),
     recurrence:$('recurrence'), notes:$('notes'),
     list:$('list'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
-    cancelEditBtn:$('cancelEditBtn'), search:$('search'), statusFilter:$('statusFilter'),
+    cancelEditBtn:$('cancelEditBtn'), search:$('search'), clearSearchBtn:$('clearSearchBtn'), smartSearchStatus:$('smartSearchStatus'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
     weekCount:$('weekCount'), paidTotal:$('paidTotal'), dueCount:$('dueCount'),
@@ -414,7 +435,7 @@
   };
 
   function uid(){
-    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') return globalThis.crypto.randomUUID();
     return 'r_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
 
@@ -427,6 +448,13 @@
   function parseISODate(s){
     const [y,m,d] = s.split('-').map(Number);
     return new Date(y, m-1, d, 12, 0, 0);
+  }
+
+  function isValidISODate(s){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))) return false;
+    const [y,m,d]=String(s).split('-').map(Number);
+    const dt=new Date(y,m-1,d,12,0,0);
+    return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d;
   }
 
   function formatDate(s){
@@ -461,7 +489,7 @@
       scope = raw.country === 'Inghilterra' ? 'england' : 'italy';
     }
     const title = String(raw.title||'').trim().slice(0,120);
-    const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(String(raw.dueDate||'')) ? String(raw.dueDate) : '';
+    const dueDate = isValidISODate(raw.dueDate) ? String(raw.dueDate) : '';
     const amount = Number(raw.amount);
     if(!scope || !title || !dueDate || !Number.isFinite(amount) || amount < 0) return null;
     return {
@@ -475,7 +503,8 @@
       paid:Boolean(raw.paid),
       paidAt: raw.paidAt ? String(raw.paidAt) : null,
       createdAt: raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
-      updatedAt: raw.updatedAt ? String(raw.updatedAt) : new Date().toISOString()
+      updatedAt: raw.updatedAt ? String(raw.updatedAt) : new Date().toISOString(),
+      nextOccurrenceCreated:Boolean(raw.nextOccurrenceCreated)
     };
   }
 
@@ -505,7 +534,14 @@
 
   function save(){
     const payload = { schemaVersion: SCHEMA_VERSION, savedAt:new Date().toISOString(), records:state.records, clients:state.clients, settings:state.settings };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      return true;
+    }catch(err){
+      console.error('Salvataggio locale fallito:', err);
+      showToast('Impossibile salvare sul dispositivo. Esporta un backup e libera spazio nel browser.');
+      return false;
+    }
   }
 
   function getScopeRecords(){
@@ -520,11 +556,146 @@
     return 'upcoming';
   }
 
+  const MONTHS_IT = {
+    gennaio:'01', febbraio:'02', marzo:'03', aprile:'04', maggio:'05', giugno:'06',
+    luglio:'07', agosto:'08', settembre:'09', ottobre:'10', novembre:'11', dicembre:'12'
+  };
+
+  function normalizeSearchText(value){
+    return String(value||'')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .replace(/[’']/g,' ');
+  }
+
+  function parseSmartSearch(query){
+    const raw=normalizeSearchText(query).trim();
+    const tokens={
+      text:[], status:null, minAmount:null, maxAmount:null, exactAmount:null,
+      withinDays:null, afterDays:null, recurrence:null, scope:null, month:null
+    };
+    if(!raw) return tokens;
+
+    // Sezione / area
+    if(/\b(italia|italiano|italiane|italiani)\b/.test(raw)) tokens.scope='italy';
+    else if(/\b(inghilterra|uk|regno unito|inglese|inglesi)\b/.test(raw)) tokens.scope='england';
+    else if(/\b(lavoro|work)\b/.test(raw)) tokens.scope='work';
+    else if(/\b(clienti|cliente)\b/.test(raw)) tokens.scope='clients';
+
+    // Stato
+    if(/\b(scadut[oi]|arretrat[oi])\b/.test(raw)) tokens.status='overdue';
+    else if(/\b(oggi|scade oggi)\b/.test(raw)) tokens.status='today';
+    else if(/\b(pagat[oi]|saldat[oi])\b/.test(raw)) tokens.status='paid';
+    else if(/\b(da pagare|apert[oi]|non pagat[oi])\b/.test(raw)) tokens.status='open';
+
+    // Periodo relativo
+    let m=raw.match(/(?:entro|nei prossimi)\s+(\d{1,3})\s+giorn/);
+    if(m) tokens.withinDays=Math.max(0,Number(m[1]));
+    else if(/\bentro una settimana\b|\bentro 7 giorni\b/.test(raw)) tokens.withinDays=7;
+
+    m=raw.match(/(?:oltre|dopo)\s+(\d{1,3})\s+giorn/);
+    if(m) tokens.afterDays=Math.max(0,Number(m[1]));
+
+    // Importi
+    m=raw.match(/(?:oltre|sopra|maggiore di|>)\s*€?\s*(\d+(?:[.,]\d+)?)/);
+    if(m) tokens.minAmount=Number(m[1].replace(',','.'));
+
+    m=raw.match(/(?:sotto|meno di|inferiore a|<)\s*€?\s*(\d+(?:[.,]\d+)?)/);
+    if(m) tokens.maxAmount=Number(m[1].replace(',','.'));
+
+    m=raw.match(/(?:esattamente|pari a|uguale a)\s*€?\s*(\d+(?:[.,]\d+)?)/);
+    if(m) tokens.exactAmount=Number(m[1].replace(',','.'));
+
+    // Ricorrenza
+    if(/\bsettimanale\b/.test(raw)) tokens.recurrence='weekly';
+    else if(/\bmensile\b/.test(raw)) tokens.recurrence='monthly';
+    else if(/\bannuale\b/.test(raw)) tokens.recurrence='yearly';
+
+    // Mese espresso in italiano
+    for(const [name,num] of Object.entries(MONTHS_IT)){
+      if(new RegExp(`\\b${name}\\b`).test(raw)){
+        tokens.month=num;
+        break;
+      }
+    }
+
+    // Rimuove gli operatori riconosciuti e mantiene il testo residuo.
+    let residual=raw
+      .replace(/\b(italia|italiano|italiane|italiani|inghilterra|uk|regno unito|inglese|inglesi|lavoro|work|clienti|cliente)\b/g,' ')
+      .replace(/\b(scadut[oi]|arretrat[oi]|oggi|scade oggi|pagat[oi]|saldat[oi]|da pagare|apert[oi]|non pagat[oi])\b/g,' ')
+      .replace(/(?:entro|nei prossimi|oltre|dopo)\s+\d{1,3}\s+giorn\w*/g,' ')
+      .replace(/\bentro una settimana\b|\bentro 7 giorni\b/g,' ')
+      .replace(/(?:oltre|sopra|maggiore di|>|sotto|meno di|inferiore a|<|esattamente|pari a|uguale a)\s*€?\s*\d+(?:[.,]\d+)?/g,' ')
+      .replace(/\b(settimanale|mensile|annuale)\b/g,' ')
+      .replace(/\b(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\b/g,' ')
+      .replace(/\beuro\b|€/g,' ');
+
+    tokens.text=residual.split(/\s+/).filter(Boolean);
+    return tokens;
+  }
+
+  function describeSmartSearch(smart){
+    const parts=[];
+    if(smart.scope) parts.push({
+      italy:'Italia', england:'Inghilterra', work:'Lavoro', clients:'Clienti'
+    }[smart.scope]);
+    if(smart.status) parts.push({
+      overdue:'scaduti', today:'oggi', paid:'pagati', open:'da pagare'
+    }[smart.status]);
+    if(smart.withinDays!==null) parts.push(`entro ${smart.withinDays} giorni`);
+    if(smart.afterDays!==null) parts.push(`oltre ${smart.afterDays} giorni`);
+    if(smart.minAmount!==null) parts.push(`importo > €${smart.minAmount}`);
+    if(smart.maxAmount!==null) parts.push(`importo < €${smart.maxAmount}`);
+    if(smart.exactAmount!==null) parts.push(`importo = €${smart.exactAmount}`);
+    if(smart.recurrence) parts.push(recurrenceLabel(smart.recurrence));
+    if(smart.month) {
+      const name=Object.keys(MONTHS_IT).find(k=>MONTHS_IT[k]===smart.month);
+      if(name) parts.push(name);
+    }
+    if(smart.text.length) parts.push(`testo: ${smart.text.join(' ')}`);
+    return parts;
+  }
+
+  function getSearchBaseRecords(){
+    const smart=parseSmartSearch(state.filters.search);
+    // Se l'utente indica esplicitamente una sezione nella query, cerca lì.
+    // Altrimenti, se esiste una query, cerca globalmente su tutte le sezioni.
+    // A ricerca vuota, resta il comportamento tradizionale della scheda attiva.
+    if(smart.scope) return state.records.filter(r=>r.scope===smart.scope);
+    if(state.filters.search.trim()) return state.records.slice();
+    return getScopeRecords();
+  }
+
   function filterRecords(records){
-    const q = state.filters.search.trim().toLowerCase();
+
+    const smart = parseSmartSearch(state.filters.search);
     let out = records.filter(r=>{
-      if(q && ![r.title,r.clientName,r.country,r.method,r.notes].join(' ').toLowerCase().includes(q)) return false;
+      const haystack=normalizeSearchText([
+        r.title,r.clientName,r.country,r.method,r.notes,
+        recurrenceLabel(r.recurrence),formatDate(r.dueDate),r.dueDate
+      ].join(' '));
+
+      if(smart.text.length && !smart.text.every(term=>haystack.includes(term))) return false;
+
       const st = recordStatus(r);
+      if(smart.status==='open' && r.paid) return false;
+      if(smart.status==='overdue' && st!=='overdue') return false;
+      if(smart.status==='today' && st!=='today') return false;
+      if(smart.status==='paid' && st!=='paid') return false;
+
+      const d=daysFromToday(r.dueDate);
+      if(smart.withinDays!==null && (r.paid || d<0 || d>smart.withinDays)) return false;
+      if(smart.afterDays!==null && d<=smart.afterDays) return false;
+
+      if(smart.minAmount!==null && r.amount<=smart.minAmount) return false;
+      if(smart.maxAmount!==null && r.amount>=smart.maxAmount) return false;
+      if(smart.exactAmount!==null && Math.abs(r.amount-smart.exactAmount)>0.009) return false;
+
+      if(smart.recurrence && r.recurrence!==smart.recurrence) return false;
+      if(smart.month && r.dueDate.slice(5,7)!==smart.month) return false;
+
+      // I filtri classici restano attivi e si combinano con la ricerca.
       if(state.filters.status==='open' && r.paid) return false;
       if(state.filters.status==='overdue' && st!=='overdue') return false;
       if(state.filters.status==='today' && st!=='today') return false;
@@ -596,8 +767,18 @@
   }
 
   function renderList(){
-    const records = filterRecords(getScopeRecords());
-    els.recordCount.textContent = `${records.length} ${records.length===1?'elemento':'elementi'}`;
+    const base=getSearchBaseRecords();
+    const records = filterRecords(base);
+    const isGlobal=Boolean(state.filters.search.trim());
+    els.recordCount.textContent = `${records.length} ${records.length===1?'elemento':'elementi'}${isGlobal?' · ricerca globale':''}`;
+
+    if(els.smartSearchStatus){
+      const smart=parseSmartSearch(state.filters.search);
+      const parts=describeSmartSearch(smart);
+      els.smartSearchStatus.textContent = state.filters.search.trim()
+        ? (parts.length ? `Interpretato come: ${parts.join(' · ')}` : 'Ricerca testuale globale')
+        : 'Nessuna ricerca attiva: vengono mostrate le scadenze della sezione selezionata.';
+    }
     els.list.innerHTML = '';
     if(!records.length){
       const div = document.createElement('div');
@@ -631,6 +812,7 @@
       meta.className='item-meta';
 
       const parts = [
+        state.filters.search.trim() ? `Sezione: ${r.scope==='italy'?'Italia':r.scope==='england'?'Inghilterra':r.scope==='work'?'Lavoro':'Clienti'}` : '',
         `Scadenza: ${formatDate(r.dueDate)}`,
         (r.scope === 'italy' || r.scope === 'england') && r.country ? `Paese: ${r.country}` : '',
         (r.scope === 'work' || r.scope === 'clients') && r.clientName ? `Cliente: ${r.clientName}` : '',
@@ -717,7 +899,7 @@
   }
 
   function createNextRecurring(r){
-    if(!r.recurrence || r.recurrence==='none') return null;
+    if(!r.recurrence || r.recurrence==='none' || r.nextOccurrenceCreated) return null;
     const nextDate=addPeriod(r.dueDate,r.recurrence);
     const exists=state.records.some(x =>
       x.scope===r.scope &&
@@ -728,6 +910,7 @@
     if(exists) return null;
     const next={...r,id:uid(),dueDate:nextDate,paid:false,paidAt:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
     state.records.push(next);
+    r.nextOccurrenceCreated=true;
     return next;
   }
 
@@ -1071,7 +1254,7 @@
       state.records.push({...candidate, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()});
       showToast('Scadenza salvata.');
     }
-    save();
+    if(!save()) return;
     resetForm();
     renderScope();
   }
@@ -1170,7 +1353,29 @@
   els.newClient.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addClient();}});
   els.cancelEditBtn.addEventListener('click',resetForm);
 
-  els.search.addEventListener('input',()=>{state.filters.search=els.search.value;renderList();});
+  els.search.addEventListener('input',()=>{
+    state.filters.search=els.search.value;
+    renderList();
+  });
+  els.search.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      els.search.value='';
+      state.filters.search='';
+      renderList();
+    }
+  });
+  els.clearSearchBtn.addEventListener('click',()=>{
+    els.search.value='';
+    state.filters.search='';
+    renderList();
+    els.search.focus();
+  });
+  document.querySelectorAll('.search-chip').forEach(btn=>btn.addEventListener('click',()=>{
+    els.search.value=btn.dataset.smartQuery||'';
+    state.filters.search=els.search.value;
+    renderList();
+    els.search.focus();
+  }));
   els.statusFilter.addEventListener('change',()=>{state.filters.status=els.statusFilter.value;renderList();});
   els.monthFilter.addEventListener('change',()=>{state.filters.month=els.monthFilter.value;renderList();});
   els.sortBy.addEventListener('change',()=>{state.filters.sort=els.sortBy.value;renderList();});
@@ -1192,7 +1397,7 @@
   els.importFile.addEventListener('change',()=>els.importFile.files[0] && importBackup(els.importFile.files[0]));
   els.resetBtn.addEventListener('click',()=>confirmAction(
     'Azzera tutto',
-    'Eliminare tutte le scadenze di lavoro e personali? Prima puoi esportare un backup.',
+    'Eliminare tutte le scadenze di Italia, Inghilterra, lavoro e clienti? Prima puoi esportare un backup.',
     ()=>{state.records=[];state.clients=[];save();resetForm();renderScope();showToast('Tutti i dati sono stati eliminati.');}
   ));
 
