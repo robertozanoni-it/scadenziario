@@ -100,6 +100,15 @@
     body.scope-clients .filters,
     body.scope-clients .content > .card{background:var(--clients-bg);border-color:var(--clients-border)}
 
+    /* La ricerca è globale per default: resta neutra indipendentemente dalla categoria attiva */
+    body.scope-italy .global-search-card,
+    body.scope-england .global-search-card,
+    body.scope-work .global-search-card,
+    body.scope-clients .global-search-card{
+      background:color-mix(in srgb,var(--panel) 88%,#6b7280 12%);
+      border-color:var(--line);
+    }
+
     body.scope-italy .item{background:color-mix(in srgb, var(--italy-bg) 82%, var(--panel));border-color:var(--italy-border)}
     body.scope-england .item{background:color-mix(in srgb, var(--england-bg) 82%, var(--panel));border-color:var(--england-border)}
     body.scope-work .item{background:color-mix(in srgb, var(--work-bg) 82%, var(--panel));border-color:var(--work-border)}
@@ -113,6 +122,10 @@
       body.scope-england .item{background:var(--england-bg)}
       body.scope-work .item{background:var(--work-bg)}
       body.scope-clients .item{background:var(--clients-bg)}
+      body.scope-italy .global-search-card,
+      body.scope-england .global-search-card,
+      body.scope-work .global-search-card,
+      body.scope-clients .global-search-card{background:var(--panel);border-color:var(--line)}
     }
 
     .list{display:grid;gap:10px}
@@ -250,14 +263,14 @@
     </div>
   </section>
 
-  <section class="filters card">
+  <section class="filters card global-search-card">
     <div class="field smart-search-wrap">
-      <label for="search">Ricerca intelligente globale</label>
+      <label for="search">Ricerca intelligente globale · Tutte le categorie</label>
       <div class="smart-search-box">
         <input id="search" placeholder="Es. clienti scaduti oltre 500 euro, Italia entro 30 giorni, Rossi bonifico..." autocomplete="off" />
         <button type="button" class="btn" id="clearSearchBtn">Pulisci</button>
       </div>
-      <div class="smart-search-hint">Ricerca globale su tutte le categorie. Mostra solo i risultati che corrispondono alla parola o frase inserita. Categoria, mese e stato restringono ulteriormente la ricerca.</div>
+      <div class="smart-search-hint">Ricerca globale su tutte le categorie. Se la parola compare nel titolo/pagamento mostra solo quei risultati; altrimenti cerca anche in cliente, metodo, note, importo, data e altri campi. Categoria, mese e stato restringono ulteriormente.</div>
       <div class="smart-search-status" id="smartSearchStatus" aria-live="polite"></div>
       <div class="search-chips" aria-label="Esempi ricerca">
         <button type="button" class="search-chip" data-smart-query="scaduti">Scaduti</button>
@@ -686,6 +699,19 @@
     return state.records.slice();
   }
 
+  function getPreferredSearchMode(records, smart){
+    if(!state.filters.search.trim() || !smart.text.length) return 'all-fields';
+
+    // Se almeno un titolo contiene tutti i termini testuali, limita i risultati ai titoli.
+    // Evita che "car" mostri record trovati solo per "Carta" nel metodo o per note secondarie.
+    const hasTitleMatches = records.some(r=>{
+      const title=normalizeSearchText(r.title);
+      return smart.text.every(term=>title.includes(term));
+    });
+
+    return hasTitleMatches ? 'title-first' : 'all-fields';
+  }
+
   function filterRecords(records){
 
     const smart = parseSmartSearch(state.filters.search);
@@ -717,13 +743,20 @@
       );
 
       if(smart.text.length){
-        const words = haystack.split(/[^a-z0-9]+/).filter(Boolean);
-        const matchesAll = smart.text.every(term=>{
-          if(haystack.includes(term)) return true;
-          // Ricerca per prefisso/frammento: "car" trova "carta", "carburante", "car insurance", ecc.
-          return words.some(word => word.startsWith(term) || word.includes(term));
-        });
-        if(!matchesAll) return false;
+        const title=normalizeSearchText(r.title);
+
+        if(searchMode==='title-first'){
+          // Quando esistono corrispondenze nel titolo, mostra SOLO quelle.
+          if(!smart.text.every(term=>title.includes(term))) return false;
+        }else{
+          // Se nessun titolo corrisponde, estende la ricerca a tutti gli altri campi.
+          const words = haystack.split(/[^a-z0-9]+/).filter(Boolean);
+          const matchesAll = smart.text.every(term=>{
+            if(haystack.includes(term)) return true;
+            return words.some(word => word.startsWith(term) || word.includes(term));
+          });
+          if(!matchesAll) return false;
+        }
       }
 
       const st = recordStatus(r);
@@ -830,9 +863,13 @@
       const smart=parseSmartSearch(state.filters.search);
       const parts=describeSmartSearch(smart);
       if(hasQuery){
+        const mode=getPreferredSearchMode(base, smart);
+        const prefix = mode==='title-first'
+          ? 'Corrispondenze nel titolo'
+          : 'Ricerca estesa a tutti i campi';
         els.smartSearchStatus.textContent = parts.length
-          ? `Risultati mostrati solo per: ${parts.join(' · ')}`
-          : 'Risultati mostrati solo per la ricerca inserita.';
+          ? `${prefix}: ${parts.join(' · ')}`
+          : `${prefix}.`;
       }else if(isGlobal){
         els.smartSearchStatus.textContent = 'Vista globale: tutte le categorie. Seleziona categoria, mese o stato per restringere.';
       }else{
