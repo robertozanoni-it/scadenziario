@@ -133,6 +133,9 @@
     .list{display:grid;gap:10px}
     .paid-section{margin-top:18px}
     .paid-section .panel-title{margin-bottom:12px}
+    .paid-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+    .paid-controls .field{min-width:180px;flex:1}
+    .paid-controls .btn{white-space:nowrap}
     .paid-section .paid-list{display:grid;gap:10px}
     .paid-section .item{opacity:.78}
     .paid-section .empty{padding:28px 20px}
@@ -423,6 +426,19 @@
           <h2>Scadenze già pagate</h2>
           <span id="paidRecordCount" class="metric-note">0 elementi</span>
         </div>
+        <div class="paid-controls">
+          <div class="field">
+            <label for="paidTypeFilter">Tipo di scadenza</label>
+            <select id="paidTypeFilter">
+              <option value="all">Tutti i tipi</option>
+              <option value="italy">Italia</option>
+              <option value="england">Inghilterra</option>
+              <option value="work">Lavoro</option>
+              <option value="clients">Clienti</option>
+            </select>
+          </div>
+          <button type="button" class="btn" id="showAllPaidBtn">Visualizza tutte</button>
+        </div>
         <div id="paidList" class="paid-list"></div>
       </div>
     </section>
@@ -455,6 +471,7 @@
     clients: [],
     filters: { search:'', status:'all', month:'', sort:'dateAsc', category:'all' },
     settings: { theme:'system' },
+    paidView: { type:'all', showAll:false },
     pendingConfirm: null
   };
 
@@ -466,7 +483,7 @@
     clientSuggestions:$('clientSuggestions'), newClient:$('newClient'), addClientBtn:$('addClientBtn'),
     clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'), customMethod:$('customMethod'), customMethodField:$('customMethodField'),
     recurrence:$('recurrence'), notes:$('notes'),
-    list:$('list'), paidList:$('paidList'), paidRecordCount:$('paidRecordCount'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
+    list:$('list'), paidList:$('paidList'), paidRecordCount:$('paidRecordCount'), paidTypeFilter:$('paidTypeFilter'), showAllPaidBtn:$('showAllPaidBtn'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
     cancelEditBtn:$('cancelEditBtn'), search:$('search'), clearSearchBtn:$('clearSearchBtn'), categoryFilter:$('categoryFilter'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
@@ -949,11 +966,25 @@
       });
     }
 
+    // Filtro dedicato allo storico dei pagati: non modifica né i dati
+    // né i filtri/ordinamenti della lista delle scadenze aperte.
+    if(state.paidView.type!=='all'){
+      paidRecords = paidRecords.filter(r=>r.scope===state.paidView.type);
+    }
+
+    const totalPaidFiltered = paidRecords.length;
+    const visiblePaidRecords = state.paidView.showAll ? paidRecords : paidRecords.slice(0,5);
+
     els.recordCount.textContent = `${openRecords.length} ${openRecords.length===1?'elemento':'elementi'}${hasQuery?' · risultati ricerca':isGlobal?' · da pagare':' · filtrati'}`;
-    els.paidRecordCount.textContent = `${paidRecords.length} ${paidRecords.length===1?'elemento':'elementi'}`;
+    els.paidRecordCount.textContent = `${totalPaidFiltered} ${totalPaidFiltered===1?'elemento':'elementi'}`;
 
     els.list.innerHTML = '';
     els.paidList.innerHTML = '';
+
+    if(els.showAllPaidBtn){
+      els.showAllPaidBtn.textContent = state.paidView.showAll ? 'Mostra meno' : 'Visualizza tutte';
+      els.showAllPaidBtn.disabled = totalPaidFiltered <= 5;
+    }
 
     if(!openRecords.length){
       const div = document.createElement('div');
@@ -964,13 +995,13 @@
       for(const r of openRecords) els.list.appendChild(buildRecordItem(r));
     }
 
-    if(!paidRecords.length){
+    if(!visiblePaidRecords.length){
       const div = document.createElement('div');
       div.className='empty';
       div.textContent='Nessuna scadenza già pagata.';
       els.paidList.appendChild(div);
     }else{
-      for(const r of paidRecords) els.paidList.appendChild(buildRecordItem(r));
+      for(const r of visiblePaidRecords) els.paidList.appendChild(buildRecordItem(r));
     }
   }
 
@@ -1485,6 +1516,15 @@
   els.statusFilter.addEventListener('change',()=>{state.filters.status=els.statusFilter.value;renderList();});
   els.monthFilter.addEventListener('change',()=>{state.filters.month=els.monthFilter.value;renderList();});
   els.sortBy.addEventListener('change',()=>{state.filters.sort=els.sortBy.value;renderList();});
+  els.paidTypeFilter.addEventListener('change',()=>{
+    state.paidView.type=els.paidTypeFilter.value;
+    state.paidView.showAll=false;
+    renderList();
+  });
+  els.showAllPaidBtn.addEventListener('click',()=>{
+    state.paidView.showAll=!state.paidView.showAll;
+    renderList();
+  });
 
   els.newRecurrenceBtn.addEventListener('click',()=>{
     resetForm();
