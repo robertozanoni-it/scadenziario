@@ -338,6 +338,15 @@
       </div>
       <form id="paymentForm" class="form-grid" novalidate>
         <input type="hidden" id="recordId" />
+        <div class="field" id="scopeEditField">
+          <label for="recordScope">Tipologia</label>
+          <select id="recordScope">
+            <option value="italy">Italia</option>
+            <option value="england">Inghilterra</option>
+            <option value="work">Lavoro</option>
+            <option value="clients">Clienti</option>
+          </select>
+        </div>
         <div class="field">
           <label for="title">Pagamento *</label>
           <input id="title" maxlength="120" required placeholder="Es. F24 IVA, bolletta luce..." />
@@ -477,7 +486,7 @@
 
   const $ = (id) => document.getElementById(id);
   const els = {
-    form:$('paymentForm'), recordId:$('recordId'), title:$('title'), amount:$('amount'),
+    form:$('paymentForm'), recordId:$('recordId'), recordScope:$('recordScope'), title:$('title'), amount:$('amount'),
     dueDate:$('dueDate'), clientName:$('clientName'), country:$('country'),
     clientField:$('clientField'), countryField:$('countryField'), clientManager:$('clientManager'),
     clientSuggestions:$('clientSuggestions'), newClient:$('newClient'), addClientBtn:$('addClientBtn'),
@@ -1217,16 +1226,17 @@
     showToast('Report CSV scaricato.');
   }
 
-  function updateScopeFields(){
-    const isCountrySection = state.scope === 'italy' || state.scope === 'england';
+  function updateScopeFields(selectedScope = state.scope){
+    const scope = ['italy','england','work','clients'].includes(selectedScope) ? selectedScope : state.scope;
+    const isCountrySection = scope === 'italy' || scope === 'england';
     els.countryField.classList.add('hidden');
     els.clientField.classList.toggle('hidden', isCountrySection);
     els.clientManager.classList.toggle('hidden', isCountrySection);
 
-    if(state.scope==='italy'){
+    if(scope==='italy'){
       els.country.value='Italia';
       els.clientName.value='';
-    }else if(state.scope==='england'){
+    }else if(scope==='england'){
       els.country.value='Inghilterra';
       els.clientName.value='';
     }
@@ -1307,6 +1317,7 @@
   function resetForm(){
     els.form.reset();
     els.recordId.value='';
+    els.recordScope.value=state.scope;
     els.formTitle.textContent='Nuova scadenza';
     els.saveBtn.textContent='Salva scadenza';
     els.cancelEditBtn.classList.add('hidden');
@@ -1328,6 +1339,7 @@
       renderScope();
     }
     els.recordId.value=r.id;
+    els.recordScope.value=r.scope;
     els.title.value=r.title;
     els.amount.value=r.amount;
     els.dueDate.value=r.dueDate;
@@ -1339,6 +1351,7 @@
     els.formTitle.textContent='Modifica scadenza';
     els.saveBtn.textContent='Salva modifiche';
     els.cancelEditBtn.classList.remove('hidden');
+    updateScopeFields(r.scope);
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
@@ -1358,10 +1371,10 @@
     const methodValue=getMethodValue();
     if(els.method.value==='Altro' && !methodValue){ showToast('Inserisci il metodo di pagamento personalizzato.'); els.customMethod.focus(); return; }
     const candidate = normalizeRecord({
-      id:id||uid(), scope:state.scope, title:els.title.value, amount:els.amount.value,
+      id:id||uid(), scope:els.recordScope.value, title:els.title.value, amount:els.amount.value,
       dueDate:els.dueDate.value,
-      clientName: (state.scope==='italy' || state.scope==='england') ? '' : els.clientName.value,
-      country: state.scope==='italy' ? 'Italia' : state.scope==='england' ? 'Inghilterra' : '',
+      clientName: (els.recordScope.value==='italy' || els.recordScope.value==='england') ? '' : els.clientName.value,
+      country: els.recordScope.value==='italy' ? 'Italia' : els.recordScope.value==='england' ? 'Inghilterra' : '',
       method:methodValue, recurrence:els.recurrence.value, notes:els.notes.value,
       paid:false
     });
@@ -1378,13 +1391,19 @@
       const idx=state.records.findIndex(r=>r.id===id);
       if(idx<0) return;
       const prev=state.records[idx];
+      const movedScope = prev.scope !== candidate.scope;
       state.records[idx]={...candidate, paid:prev.paid, paidAt:prev.paidAt, createdAt:prev.createdAt, updatedAt:new Date().toISOString()};
-      showToast('Scadenza aggiornata.');
+      if(movedScope) state.scope=candidate.scope;
+      showToast(movedScope ? 'Scadenza aggiornata e spostata nella nuova tipologia.' : 'Scadenza aggiornata.');
     }else{
       state.records.push({...candidate, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()});
       showToast('Scadenza salvata.');
     }
     if(!save()) return;
+    if(id){
+      state.filters.category=state.scope;
+      if(els.categoryFilter) els.categoryFilter.value=state.scope;
+    }
     resetForm();
     renderScope();
   }
@@ -1482,6 +1501,11 @@
 
   els.form.addEventListener('submit',onSubmit);
   els.method.addEventListener('change',updateCustomMethodField);
+  els.recordScope.addEventListener('change',()=>{
+    updateScopeFields(els.recordScope.value);
+    const labels={italy:'Italia',england:'Inghilterra',work:'Lavoro',clients:'Clienti'};
+    els.scopeBadge.textContent=labels[els.recordScope.value]||'Italia';
+  });
   els.addClientBtn.addEventListener('click',addClient);
   els.newClient.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addClient();}});
   els.cancelEditBtn.addEventListener('click',resetForm);
