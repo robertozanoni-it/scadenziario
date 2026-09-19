@@ -131,6 +131,11 @@
     }
 
     .list{display:grid;gap:10px}
+    .paid-section{margin-top:18px}
+    .paid-section .panel-title{margin-bottom:12px}
+    .paid-section .paid-list{display:grid;gap:10px}
+    .paid-section .item{opacity:.78}
+    .paid-section .empty{padding:28px 20px}
     .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
     .item:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
     .item.search-match.scope-italy{background:color-mix(in srgb, var(--italy-bg) 82%, var(--panel));border-color:var(--italy-border)}
@@ -412,6 +417,14 @@
         <span id="recordCount" class="metric-note">0 elementi</span>
       </div>
       <div id="list" class="list"></div>
+
+      <div class="paid-section">
+        <div class="panel-title">
+          <h2>Scadenze già pagate</h2>
+          <span id="paidRecordCount" class="metric-note">0 elementi</span>
+        </div>
+        <div id="paidList" class="paid-list"></div>
+      </div>
     </section>
   </main>
 </div>
@@ -453,7 +466,7 @@
     clientSuggestions:$('clientSuggestions'), newClient:$('newClient'), addClientBtn:$('addClientBtn'),
     clientList:$('clientList'), clientCount:$('clientCount'), method:$('method'), customMethod:$('customMethod'), customMethodField:$('customMethodField'),
     recurrence:$('recurrence'), notes:$('notes'),
-    list:$('list'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
+    list:$('list'), paidList:$('paidList'), paidRecordCount:$('paidRecordCount'), scopeBadge:$('scopeBadge'), formTitle:$('formTitle'), saveBtn:$('saveBtn'),
     cancelEditBtn:$('cancelEditBtn'), search:$('search'), clearSearchBtn:$('clearSearchBtn'), categoryFilter:$('categoryFilter'), statusFilter:$('statusFilter'),
     monthFilter:$('monthFilter'), sortBy:$('sortBy'), dueTotal:$('dueTotal'),
     overdueTotal:$('overdueTotal'), overdueCount:$('overdueCount'), weekTotal:$('weekTotal'),
@@ -820,6 +833,99 @@
     els.paidTotal.textContent = money(sum(paid));
   }
 
+  function buildRecordItem(r){
+    const st = statusLabel(r);
+    const item = document.createElement('article');
+    const hasSearchQuery = Boolean(state.filters.search.trim());
+    item.className = `item ${st.cls} ${r.paid?'paid':''} ${hasSearchQuery?'search-match':''} scope-${r.scope}`;
+    item.tabIndex = 0;
+    item.setAttribute('role','button');
+    item.setAttribute('aria-label',`Modifica scadenza ${r.title}`);
+    item.addEventListener('click',()=>startEdit(r.id));
+    item.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter' || e.key===' '){
+        e.preventDefault();
+        startEdit(r.id);
+      }
+    });
+
+    const main = document.createElement('div');
+    main.className='item-main';
+
+    const title = document.createElement('div');
+    title.className='item-title';
+    title.textContent=r.title;
+
+    const meta = document.createElement('div');
+    meta.className='item-meta';
+
+    const parts = [
+      state.filters.search.trim() ? `Sezione: ${r.scope==='italy'?'Italia':r.scope==='england'?'Inghilterra':r.scope==='work'?'Lavoro':'Clienti'}` : '',
+      `Scadenza: ${formatDate(r.dueDate)}`,
+      (r.scope === 'italy' || r.scope === 'england') && r.country ? `Paese: ${r.country}` : '',
+      (r.scope === 'work' || r.scope === 'clients') && r.clientName ? `Cliente: ${r.clientName}` : '',
+      r.method ? `Metodo: ${r.method}` : '',
+      r.recurrence && r.recurrence!=='none' ? `Ricorrenza: ${recurrenceLabel(r.recurrence)}` : ''
+    ].filter(Boolean);
+
+    if(r.paid && r.paidAt){
+      parts.push(`Pagato il: ${new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(r.paidAt))}`);
+    }
+
+    for(const p of parts){
+      const span=document.createElement('span');
+      span.textContent=p;
+      meta.appendChild(span);
+    }
+
+    const status = document.createElement('div');
+    status.className=`status ${st.cls}`;
+    status.style.marginTop='8px';
+    status.textContent=st.label;
+
+    main.append(title,meta,status);
+
+    if(r.notes){
+      const notes=document.createElement('div');
+      notes.className='metric-note';
+      notes.style.marginTop='8px';
+      notes.textContent=r.notes;
+      main.appendChild(notes);
+    }
+
+    const side = document.createElement('div');
+    const amount = document.createElement('div');
+    amount.className='amount';
+    amount.textContent=money(r.amount);
+
+    const actions = document.createElement('div');
+    actions.className='actions';
+
+    const paidBtn = document.createElement('button');
+    paidBtn.className='mini';
+    paidBtn.textContent = r.paid ? 'Segna non pagato' : 'Segna pagato';
+    paidBtn.addEventListener('click',(e)=>{e.stopPropagation();togglePaid(r.id);});
+
+    const editBtn = document.createElement('button');
+    editBtn.className='mini';
+    editBtn.textContent='Modifica';
+    editBtn.addEventListener('click',(e)=>{e.stopPropagation();startEdit(r.id);});
+
+    const delBtn = document.createElement('button');
+    delBtn.className='mini';
+    delBtn.textContent='Elimina';
+    delBtn.addEventListener('click',(e)=>{e.stopPropagation();confirmAction(
+      'Elimina scadenza',
+      `Eliminare "${r.title}"?`,
+      ()=>deleteRecord(r.id)
+    );});
+
+    actions.append(paidBtn,editBtn,delBtn);
+    side.append(amount,actions);
+    item.append(main,side);
+    return item;
+  }
+
   function renderList(){
     const base=getSearchBaseRecords();
     const records = filterRecords(base);
@@ -829,102 +935,42 @@
     const hasStatus=state.filters.status!=='all';
     const isGlobal=!hasCategory && !hasMonth && !hasStatus;
 
-    els.recordCount.textContent = `${records.length} ${records.length===1?'elemento':'elementi'}${hasQuery?' · risultati ricerca':isGlobal?' · tutte le categorie':' · filtrati'}`;
+    // Le scadenze aperte sono sempre presentate prima per data più imminente
+    // quando è attivo l'ordinamento standard "Scadenza più vicina".
+    let openRecords = records.filter(r=>!r.paid);
+    let paidRecords = records.filter(r=>r.paid);
+
+    if(state.filters.sort==='dateAsc'){
+      openRecords = openRecords.slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
+      paidRecords = paidRecords.slice().sort((a,b)=>{
+        const aPaid=a.paidAt||a.updatedAt||'';
+        const bPaid=b.paidAt||b.updatedAt||'';
+        return bPaid.localeCompare(aPaid);
+      });
+    }
+
+    els.recordCount.textContent = `${openRecords.length} ${openRecords.length===1?'elemento':'elementi'}${hasQuery?' · risultati ricerca':isGlobal?' · da pagare':' · filtrati'}`;
+    els.paidRecordCount.textContent = `${paidRecords.length} ${paidRecords.length===1?'elemento':'elementi'}`;
 
     els.list.innerHTML = '';
-    if(!records.length){
+    els.paidList.innerHTML = '';
+
+    if(!openRecords.length){
       const div = document.createElement('div');
       div.className='empty';
-      div.textContent='Nessuna scadenza trovata.';
+      div.textContent='Nessuna scadenza da pagare trovata.';
       els.list.appendChild(div);
-      return;
+    }else{
+      for(const r of openRecords) els.list.appendChild(buildRecordItem(r));
     }
-    for(const r of records){
-      const st = statusLabel(r);
-      const item = document.createElement('article');
-      const hasSearchQuery = Boolean(state.filters.search.trim());
-      item.className = `item ${st.cls} ${r.paid?'paid':''} ${hasSearchQuery?'search-match':''} scope-${r.scope}`;
-      item.tabIndex = 0;
-      item.setAttribute('role','button');
-      item.setAttribute('aria-label',`Modifica scadenza ${r.title}`);
-      item.addEventListener('click',()=>startEdit(r.id));
-      item.addEventListener('keydown',(e)=>{
-        if(e.key==='Enter' || e.key===' '){
-          e.preventDefault();
-          startEdit(r.id);
-        }
-      });
-      const main = document.createElement('div');
-      main.className='item-main';
 
-      const title = document.createElement('div');
-      title.className='item-title';
-      title.textContent=r.title;
-
-      const meta = document.createElement('div');
-      meta.className='item-meta';
-
-      const parts = [
-        state.filters.search.trim() ? `Sezione: ${r.scope==='italy'?'Italia':r.scope==='england'?'Inghilterra':r.scope==='work'?'Lavoro':'Clienti'}` : '',
-        `Scadenza: ${formatDate(r.dueDate)}`,
-        (r.scope === 'italy' || r.scope === 'england') && r.country ? `Paese: ${r.country}` : '',
-        (r.scope === 'work' || r.scope === 'clients') && r.clientName ? `Cliente: ${r.clientName}` : '',
-        r.method ? `Metodo: ${r.method}` : '',
-        r.recurrence && r.recurrence!=='none' ? `Ricorrenza: ${recurrenceLabel(r.recurrence)}` : ''
-      ].filter(Boolean);
-
-      for(const p of parts){
-        const span=document.createElement('span');
-        span.textContent=p;
-        meta.appendChild(span);
-      }
-
-      const status = document.createElement('div');
-      status.className=`status ${st.cls}`;
-      status.style.marginTop='8px';
-      status.textContent=st.label;
-
-      main.append(title,meta,status);
-
-      if(r.notes){
-        const notes=document.createElement('div');
-        notes.className='metric-note';
-        notes.style.marginTop='8px';
-        notes.textContent=r.notes;
-        main.appendChild(notes);
-      }
-
-      const side = document.createElement('div');
-      const amount = document.createElement('div');
-      amount.className='amount';
-      amount.textContent=money(r.amount);
-
-      const actions = document.createElement('div');
-      actions.className='actions';
-
-      const paidBtn = document.createElement('button');
-      paidBtn.className='mini';
-      paidBtn.textContent = r.paid ? 'Segna non pagato' : 'Segna pagato';
-      paidBtn.addEventListener('click',(e)=>{e.stopPropagation();togglePaid(r.id);});
-
-      const editBtn = document.createElement('button');
-      editBtn.className='mini';
-      editBtn.textContent='Modifica';
-      editBtn.addEventListener('click',(e)=>{e.stopPropagation();startEdit(r.id);});
-
-      const delBtn = document.createElement('button');
-      delBtn.className='mini';
-      delBtn.textContent='Elimina';
-      delBtn.addEventListener('click',(e)=>{e.stopPropagation();confirmAction(
-        'Elimina scadenza',
-        `Eliminare "${r.title}"?`,
-        ()=>deleteRecord(r.id)
-      );});
-
-      actions.append(paidBtn,editBtn,delBtn);
-      side.append(amount,actions);
-      item.append(main,side);
-      els.list.appendChild(item);
+    if(!paidRecords.length){
+      const div = document.createElement('div');
+      div.className='empty';
+      div.textContent='Nessuna scadenza già pagata.';
+      els.paidList.appendChild(div);
+    }else{
+      for(const r of paidRecords) els.paidList.appendChild(buildRecordItem(r));
     }
   }
 
