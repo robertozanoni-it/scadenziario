@@ -164,6 +164,19 @@
     .status.today{color:var(--warn)}
     .status.upcoming{color:var(--muted)}
     .status.paid{color:var(--ok)}
+    .current-month-badge{
+      display:inline-flex;
+      align-items:center;
+      margin-top:8px;
+      padding:5px 9px;
+      border-radius:999px;
+      background:#dc2626;
+      color:#fff;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.01em;
+      box-shadow:0 4px 12px rgba(220,38,38,.22);
+    }
     .empty{text-align:center;padding:42px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
     .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
     .alerts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
@@ -293,6 +306,7 @@
         <button type="button" class="search-chip" data-smart-query="entro 7 giorni">Entro 7 giorni</button>
         <button type="button" class="search-chip" data-smart-query="oltre 500 euro">Oltre €500</button>
         <button type="button" class="search-chip" data-smart-query="clienti non pagati">Clienti da pagare</button>
+        <button type="button" class="search-chip" data-smart-query="pagati">Scadenze già pagate</button>
       </div>
     </div>
     <div class="field">
@@ -541,6 +555,13 @@
     const t = parseISODate(todayISO());
     const d = parseISODate(dateStr);
     return Math.round((d-t)/one);
+  }
+
+  function isCurrentMonthYear(dateStr){
+    if(!isValidISODate(dateStr)) return false;
+    const d=parseISODate(dateStr);
+    const now=parseISODate(todayISO());
+    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
   }
 
   function showToast(message){
@@ -911,6 +932,13 @@
 
     main.append(title,meta,status);
 
+    if(!r.paid && isCurrentMonthYear(r.dueDate)){
+      const monthBadge=document.createElement('span');
+      monthBadge.className='current-month-badge';
+      monthBadge.textContent='Scadenza del mese corrente';
+      main.appendChild(monthBadge);
+    }
+
     if(r.notes){
       const notes=document.createElement('div');
       notes.className='metric-note';
@@ -982,7 +1010,8 @@
     }
 
     const totalPaidFiltered = paidRecords.length;
-    const visiblePaidRecords = state.paidView.showAll ? paidRecords : paidRecords.slice(0,5);
+    const paidSearchActive = parseSmartSearch(state.filters.search).status==='paid';
+    const visiblePaidRecords = (state.paidView.showAll || paidSearchActive) ? paidRecords : paidRecords.slice(0,5);
 
     els.recordCount.textContent = `${openRecords.length} ${openRecords.length===1?'elemento':'elementi'}${hasQuery?' · risultati ricerca':isGlobal?' · da pagare':' · filtrati'}`;
     els.paidRecordCount.textContent = `${totalPaidFiltered} ${totalPaidFiltered===1?'elemento':'elementi'}`;
@@ -991,8 +1020,13 @@
     els.paidList.innerHTML = '';
 
     if(els.showAllPaidBtn){
-      els.showAllPaidBtn.textContent = state.paidView.showAll ? 'Mostra meno' : 'Visualizza tutte';
-      els.showAllPaidBtn.disabled = totalPaidFiltered <= 5;
+      if(paidSearchActive){
+        els.showAllPaidBtn.textContent='Tutte visualizzate';
+        els.showAllPaidBtn.disabled=true;
+      }else{
+        els.showAllPaidBtn.textContent = state.paidView.showAll ? 'Mostra meno' : 'Visualizza tutte';
+        els.showAllPaidBtn.disabled = totalPaidFiltered <= 5;
+      }
     }
 
     if(!openRecords.length){
