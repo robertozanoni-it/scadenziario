@@ -338,6 +338,16 @@
       }
     }
 
+
+    /* Promemoria email */
+    .email-reminder-card{margin-bottom:18px;border-top:4px solid #206AF3}
+    .email-reminder-grid{display:grid;grid-template-columns:minmax(220px,1.2fr) minmax(300px,2fr) auto;gap:10px;align-items:end}
+    .email-reminder-status{margin-top:10px;font-size:13px;color:var(--muted)}
+    .email-reminder-status.ok{color:var(--ok);font-weight:800}
+    .email-reminder-status.warn{color:var(--warn);font-weight:800}
+    .email-note{font-size:12px;color:var(--muted);margin-top:8px}
+    @media(max-width:900px){.email-reminder-grid{grid-template-columns:1fr}}
+
   </style>
 </head>
 <body>
@@ -366,6 +376,27 @@
   </nav>
 
   <section id="alerts" class="alerts" aria-live="polite"></section>
+
+
+  <section class="card email-reminder-card" aria-label="Promemoria email">
+    <div class="panel-title">
+      <h2>Promemoria email automatici</h2>
+      <span class="badge personal">3 giorni prima</span>
+    </div>
+    <div class="email-reminder-grid">
+      <div class="field">
+        <label for="reminderEmail">Email destinatario</label>
+        <input id="reminderEmail" type="email" value="zanoni3956@gmail.com" />
+      </div>
+      <div class="field">
+        <label for="reminderEndpoint">URL Web App Google Apps Script</label>
+        <input id="reminderEndpoint" type="url" placeholder="https://script.google.com/macros/s/…/exec" />
+      </div>
+      <button class="btn primary" id="syncRemindersBtn" type="button">Sincronizza email</button>
+    </div>
+    <div id="reminderSyncStatus" class="email-reminder-status">Non configurato. Inserisci l’URL della Web App e sincronizza.</div>
+    <div class="email-note">Le email vengono gestite online dal tuo Google Apps Script e arrivano anche con browser o Mac spenti. Le scadenze pagate non generano promemoria.</div>
+  </section>
 
   <section class="summary" aria-label="Riepilogo">
     <div class="card">
@@ -594,7 +625,7 @@
     records: [],
     clients: [],
     filters: { search:'', status:'all', month:'', sort:'dateAsc', category:'all' },
-    settings: { theme:'system' },
+    settings: { theme:'system', reminderEmail:'zanoni3956@gmail.com', reminderEndpoint:'', lastReminderSync:null },
     paidView: { type:'all', showAll:false },
     pendingConfirm: null
   };
@@ -615,6 +646,7 @@
     futureTotal:$('futureTotal'), futureCount:$('futureCount'), recordCount:$('recordCount'),
     newRecurrenceBtn:$('newRecurrenceBtn'), themeBtn:$('themeBtn'), reportBtn:$('reportBtn'), alerts:$('alerts'),
     exportBtn:$('exportBtn'), importBtn:$('importBtn'), importFile:$('importFile'), resetBtn:$('resetBtn'),
+    reminderEmail:$('reminderEmail'), reminderEndpoint:$('reminderEndpoint'), syncRemindersBtn:$('syncRemindersBtn'), reminderSyncStatus:$('reminderSyncStatus'),
     toast:$('toast'), confirmDialog:$('confirmDialog'), dialogTitle:$('dialogTitle'),
     dialogText:$('dialogText'), dialogCancel:$('dialogCancel'), dialogConfirm:$('dialogConfirm')
   };
@@ -717,6 +749,11 @@
         : [];
       if(parsed.settings && ['system','light','dark'].includes(parsed.settings.theme)){
         state.settings.theme = parsed.settings.theme;
+      }
+      if(parsed.settings){
+        state.settings.reminderEmail = String(parsed.settings.reminderEmail||'zanoni3956@gmail.com').trim() || 'zanoni3956@gmail.com';
+        state.settings.reminderEndpoint = String(parsed.settings.reminderEndpoint||'').trim();
+        state.settings.lastReminderSync = parsed.settings.lastReminderSync ? String(parsed.settings.lastReminderSync) : null;
       }
     }catch(err){
       console.error(err);
@@ -948,6 +985,66 @@
     else { els.method.value=''; els.customMethod.value=''; els.customMethodField.classList.add('hidden'); }
   }
   function getMethodValue(){ return els.method.value==='Altro' ? els.customMethod.value.trim().slice(0,80) : els.method.value; }
+
+  function updateReminderUi(){
+    if(!els.reminderEmail || !els.reminderEndpoint || !els.reminderSyncStatus) return;
+    els.reminderEmail.value = state.settings.reminderEmail || 'zanoni3956@gmail.com';
+    els.reminderEndpoint.value = state.settings.reminderEndpoint || '';
+    if(!state.settings.reminderEndpoint){
+      els.reminderSyncStatus.textContent='Non configurato. Inserisci l’URL della Web App e sincronizza.';
+      els.reminderSyncStatus.className='email-reminder-status warn';
+      return;
+    }
+    const openCount=state.records.filter(r=>!r.paid).length;
+    const last=state.settings.lastReminderSync
+      ? new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(state.settings.lastReminderSync))
+      : 'mai';
+    els.reminderSyncStatus.textContent=`Configurato · ${openCount} scadenze aperte · ultima sincronizzazione: ${last}`;
+    els.reminderSyncStatus.className='email-reminder-status ok';
+  }
+
+  function getReminderPayload(){
+    return {
+      action:'sync',
+      schemaVersion:1,
+      recipient:state.settings.reminderEmail || 'zanoni3956@gmail.com',
+      timezone:'Europe/London',
+      reminderDaysBefore:3,
+      syncedAt:new Date().toISOString(),
+      records:state.records.map(r=>({
+        id:r.id, scope:r.scope, title:r.title, amount:r.amount, dueDate:r.dueDate,
+        clientName:r.clientName||'', country:r.country||'', method:r.method||'',
+        notes:r.notes||'', recurrence:r.recurrence||'none', paid:Boolean(r.paid), paidAt:r.paidAt||null
+      }))
+    };
+  }
+
+  async function syncReminderSnapshot({silent=false}={}){
+    const endpoint=String(state.settings.reminderEndpoint||'').trim();
+    const email=String(state.settings.reminderEmail||'').trim();
+    if(!endpoint){ if(!silent) showToast('Inserisci prima l’URL della Web App Google Apps Script.'); updateReminderUi(); return false; }
+    if(!/^https:\/\/script\.google\.com\//i.test(endpoint)){ if(!silent) showToast('URL Apps Script non valido.'); return false; }
+    if(!/^\S+@\S+\.\S+$/.test(email)){ if(!silent) showToast('Email destinatario non valida.'); return false; }
+    try{
+      // no-cors rende affidabile l'invio anche quando questo file viene aperto direttamente da disco (file://).
+      await fetch(endpoint,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(getReminderPayload())});
+      state.settings.lastReminderSync=new Date().toISOString();
+      save();
+      updateReminderUi();
+      if(!silent) showToast('Scadenze sincronizzate per i promemoria email.');
+      return true;
+    }catch(err){
+      console.error('Sincronizzazione promemoria fallita:',err);
+      if(!silent) showToast('Sincronizzazione email non riuscita. Controlla URL e connessione.');
+      return false;
+    }
+  }
+
+  function scheduleReminderSync(){
+    clearTimeout(scheduleReminderSync.timer);
+    if(!state.settings.reminderEndpoint) return;
+    scheduleReminderSync.timer=setTimeout(()=>syncReminderSnapshot({silent:true}),400);
+  }
 
   function renderSummary(){
     const records = getScopeRecords();
@@ -1402,7 +1499,7 @@
       del.style.cssText='border:0;background:transparent;color:inherit;font-weight:900;padding:0 2px';
       del.addEventListener('click',()=>confirmAction('Elimina cliente',`Eliminare "${name}" dalla lista clienti? Le scadenze già registrate resteranno invariate.`,()=>{
         state.clients=state.clients.filter(c=>c!==name);
-        save(); renderClients(); showToast('Cliente eliminato dalla lista.');
+        save(); renderClients(); scheduleReminderSync(); showToast('Cliente eliminato dalla lista.');
       }));
       chip.append(txt,del);
       els.clientList.appendChild(chip);
@@ -1417,7 +1514,7 @@
     }
     state.clients.push(name);
     els.newClient.value='';
-    save(); renderClients(); showToast('Cliente aggiunto.');
+    save(); renderClients(); scheduleReminderSync(); showToast('Cliente aggiunto.');
   }
 
   function renderScope(){
@@ -1535,6 +1632,7 @@
       showToast('Scadenza salvata.');
     }
     if(!save()) return;
+    scheduleReminderSync();
     if(id){
       state.filters.category=state.scope;
       if(els.categoryFilter) els.categoryFilter.value=state.scope;
@@ -1552,6 +1650,7 @@
     let nextCreated=null;
     if(r.paid) nextCreated=createNextRecurring(r);
     save();
+    scheduleReminderSync();
     renderScope();
     if(r.paid && nextCreated){
       showToast(`Pagamento segnato come pagato. Prossima scadenza: ${formatDate(nextCreated.dueDate)}.`);
@@ -1562,7 +1661,7 @@
 
   function deleteRecord(id){
     state.records=state.records.filter(r=>r.id!==id);
-    save(); renderScope(); resetForm(); showToast('Scadenza eliminata.');
+    save(); scheduleReminderSync(); renderScope(); resetForm(); showToast('Scadenza eliminata.');
   }
 
   function confirmAction(title,text,fn){
@@ -1614,7 +1713,7 @@
         state.settings=previousSettings;
         throw err;
       }
-      resetForm(); renderScope();
+      resetForm(); renderScope(); scheduleReminderSync();
       showToast(`Backup importato: ${deduped.length} scadenze.`);
     }catch(err){
       console.error(err);
@@ -1703,8 +1802,22 @@
   els.resetBtn.addEventListener('click',()=>confirmAction(
     'Azzera tutto',
     'Eliminare tutte le scadenze di Italia, Inghilterra, lavoro e clienti? Prima puoi esportare un backup.',
-    ()=>{state.records=[];state.clients=[];save();resetForm();renderScope();showToast('Tutti i dati sono stati eliminati.');}
+    ()=>{state.records=[];state.clients=[];save();scheduleReminderSync();resetForm();renderScope();showToast('Tutti i dati sono stati eliminati.');}
   ));
+
+  els.reminderEmail.addEventListener('change',()=>{
+    state.settings.reminderEmail=els.reminderEmail.value.trim() || 'zanoni3956@gmail.com';
+    save(); updateReminderUi(); scheduleReminderSync();
+  });
+  els.reminderEndpoint.addEventListener('change',()=>{
+    state.settings.reminderEndpoint=els.reminderEndpoint.value.trim();
+    save(); updateReminderUi();
+  });
+  els.syncRemindersBtn.addEventListener('click',()=>{
+    state.settings.reminderEmail=els.reminderEmail.value.trim() || 'zanoni3956@gmail.com';
+    state.settings.reminderEndpoint=els.reminderEndpoint.value.trim();
+    save(); syncReminderSnapshot();
+  });
 
   els.dialogCancel.addEventListener('click',()=>{state.pendingConfirm=null;els.confirmDialog.close();});
   els.dialogConfirm.addEventListener('click',()=>{
@@ -1716,6 +1829,7 @@
 
   load();
   applyTheme();
+  updateReminderUi();
   resetForm();
   renderScope();
 })();
