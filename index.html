@@ -390,7 +390,7 @@
       </div>
       <div class="field">
         <label for="reminderEndpoint">URL Web App Google Apps Script</label>
-        <input id="reminderEndpoint" type="url" placeholder="https://script.google.com/macros/s/…/exec" />
+        <input id="reminderEndpoint" type="url" value="https://script.google.com/macros/s/AKfycbwFvy97A2b2e6MTC7sCDVuDXcyIH_4-iCrZQpFuz4ZD0_9ngTcramZF3XkNupqEqDvVOw/exec" placeholder="https://script.google.com/macros/s/…/exec" />
       </div>
       <button class="btn primary" id="syncRemindersBtn" type="button">Sincronizza email</button>
     </div>
@@ -625,7 +625,7 @@
     records: [],
     clients: [],
     filters: { search:'', status:'all', month:'', sort:'dateAsc', category:'all' },
-    settings: { theme:'system', reminderEmail:'zanoni3956@gmail.com', reminderEndpoint:'', lastReminderSync:null },
+    settings: { theme:'system', reminderEmail:'zanoni3956@gmail.com', reminderEndpoint:'https://script.google.com/macros/s/AKfycbwFvy97A2b2e6MTC7sCDVuDXcyIH_4-iCrZQpFuz4ZD0_9ngTcramZF3XkNupqEqDvVOw/exec', lastReminderSync:null },
     paidView: { type:'all', showAll:false },
     pendingConfirm: null
   };
@@ -752,7 +752,7 @@
       }
       if(parsed.settings){
         state.settings.reminderEmail = String(parsed.settings.reminderEmail||'zanoni3956@gmail.com').trim() || 'zanoni3956@gmail.com';
-        state.settings.reminderEndpoint = String(parsed.settings.reminderEndpoint||'').trim();
+        state.settings.reminderEndpoint = String(parsed.settings.reminderEndpoint||'https://script.google.com/macros/s/AKfycbwFvy97A2b2e6MTC7sCDVuDXcyIH_4-iCrZQpFuz4ZD0_9ngTcramZF3XkNupqEqDvVOw/exec').trim();
         state.settings.lastReminderSync = parsed.settings.lastReminderSync ? String(parsed.settings.lastReminderSync) : null;
       }
     }catch(err){
